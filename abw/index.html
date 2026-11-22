@@ -382,6 +382,9 @@
             var BAG_KEY = "t9.abw.biomeBag", LAST_KEY = "t9.abw.lastBiome";
             var ROTATE_MS = 30000, FADE_MS = 1200;
             var biomes = [], current = null, lastWidth = window.innerWidth;
+            // A visitor who has asked their system for reduced motion gets one still scene: nothing walks, drifts or
+            // loops, and the biome does not change while the page stays open.
+            var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
             function rand(a, b) { return a + Math.random() * (b - a); }
             function div(cls, parent) {
@@ -440,8 +443,10 @@
                     d.style.bottom = "auto";
                     d.style.height = l.h * 100 + "vh";
                     d.style.backgroundSize = w + "vh " + sheet + "vh";
-                    d.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: "0 -" + sheet + "vh" }],
-                        { duration: l.frames / l.fps * 1000, iterations: Infinity, easing: "steps(" + l.frames + ")" });
+                    if (!still) {
+                        d.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: "0 -" + sheet + "vh" }],
+                            { duration: l.frames / l.fps * 1000, iterations: Infinity, easing: "steps(" + l.frames + ")" });
+                    }
                     return;
                 }
                 d.style.backgroundSize = w + "vh 100%";
@@ -450,8 +455,10 @@
                     d.style.left = -w + "vh";
                     d.style.width = "calc(100% + " + w + "vh)";
                     var a = l.dir > 0 ? 0 : w, b = l.dir > 0 ? w : 0;
-                    d.animate([{ transform: "translateX(" + a + "vh)" }, { transform: "translateX(" + b + "vh)" }],
-                        { duration: l.seconds * 1000, iterations: Infinity });
+                    if (!still) {
+                        d.animate([{ transform: "translateX(" + a + "vh)" }, { transform: "translateX(" + b + "vh)" }],
+                            { duration: l.seconds * 1000, iterations: Infinity });
+                    }
                 }
             }
 
@@ -468,15 +475,19 @@
                 return s;
             }
 
-            // Props stand on the floor's top edge, sunk by their most common in-game depth, at their in-game size.
-            // Back-row props (bushes, trees) and front props are scattered as two separate rows.
+            // Props are drawn at their in-game size, as two separate rows. Back-row props (bushes, trees) stand behind the
+            // floor, sunk by their most common in-game depth, so its top tile row covers their base. Front props stand at
+            // the top edge of the path, in tiles below the floor's top edge: behind the line the monsters walk on, so none
+            // of them shows under a monster's feet.
+            var PATH_TOP = 0.15;
             function placeProps(s) {
                 var decor = s.biome.decor;
-                placeRow(s, s.back, decor.filter(function (p) { return p.back; }), 1, 4);
-                placeRow(s, s.props, decor.filter(function (p) { return !p.back; }), 1.5, 5);
+                placeRow(s, s.back, decor.filter(function (p) { return p.back; }), 1, 4, null);
+                placeRow(s, s.props, decor.filter(function (p) { return !p.back; }), 1.5, 5, PATH_TOP);
             }
 
-            function placeRow(s, layer, items, minGap, maxGap) {
+            // sink: how far below the floor's top edge each prop's bottom stands, in tiles; null keeps each prop's own.
+            function placeRow(s, layer, items, minGap, maxGap, sink) {
                 layer.textContent = "";
                 if (!items.length) return;
                 var w = layer.clientWidth, floorH = s.floor.offsetHeight, cell = floorH / 2.4;
@@ -489,8 +500,9 @@
                     d.style.backgroundImage = url(p.file);
                     d.style.backgroundSize = p.frames * pw + "px " + ph + "px";
                     var flip = Math.random() < p.flip ? " scaleX(-1)" : "";
-                    d.style.transform = "translate(" + x + "px," + -(floorH - p.sink * cell) + "px)" + flip;
-                    if (p.frames > 1) {
+                    var depth = sink == null ? p.sink : sink;
+                    d.style.transform = "translate(" + x + "px," + -(floorH - depth * cell) + "px)" + flip;
+                    if (p.frames > 1 && !still) {
                         d.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: -p.frames * pw + "px 0" }],
                             { duration: p.frames / p.fps * 1000, iterations: Infinity, easing: "steps(" + p.frames + ")" });
                     }
@@ -505,6 +517,9 @@
                 var w = s.crew.clientWidth, floorH = s.floor.offsetHeight;
                 var picks = shuffle(s.biome.monsters.slice());
                 var count = Math.max(3, Math.min(8, Math.round(w / 240)));
+                // Every monster walks the middle of the path (the middle of the biome's walkable band in the floor's top
+                // tile row), so all their feet stand on one line.
+                var sink = (s.biome.feet[0] + s.biome.feet[1]) / 2;
                 for (var i = 0; i < count; i++) {
                     var k = {
                         m: picks[i % picks.length],
@@ -513,13 +528,11 @@
                         floorH: floorH,
                         x: (i + rand(0, 0.8)) * w / count,
                         dir: Math.random() < 0.5 ? -1 : 1,
-                        // Feet land inside the walkable band of the floor's top tile row.
-                        sink: rand(s.biome.feet[0], s.biome.feet[1])
+                        sink: sink
                     };
-                    // Lower feet are nearer the viewer, so they draw in front.
-                    k.el.style.zIndex = String(Math.round(k.sink * 100));
                     k.sheets = { walk: sheet(k.el, k.m.walk), idle: sheet(k.el, k.m.idle) };
-                    setAnim(k, "walk", rand(2, 7));
+                    // A still scene has nothing to step it: each monster stands in one frame of its idle pose.
+                    setAnim(k, still ? "idle" : "walk", rand(2, 7));
                     k.t = rand(0, 1);
                     s.critters.push(k);
                     draw(k);
@@ -618,7 +631,7 @@
             }
 
             function rotate() {
-                show(nextBiome()).then(function () { setTimeout(rotate, ROTATE_MS); });
+                show(nextBiome()).then(function () { if (!still) setTimeout(rotate, ROTATE_MS); });
             }
 
             var last = 0;
@@ -647,7 +660,7 @@
                 .then(function (list) {
                     biomes = list;
                     rotate();
-                    requestAnimationFrame(tick);
+                    if (!still) requestAnimationFrame(tick);
                 });
         })();
     </script>
