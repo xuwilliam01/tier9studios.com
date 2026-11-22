@@ -222,17 +222,16 @@
             color: var(--accent);
             border-color: var(--accent);
         }
-        /* A second pill sits close under the first. */
-        .hiring + .hiring { margin-top: 0.6rem; }
-        /* The last two pills share a row, so the card stays short; on a narrow phone they wrap to two rows. */
+        /* Two pills share a row under the badges, so the card stays short; on a narrow phone they wrap to two rows. */
         .pill-row {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.6rem;
-            margin-top: 0.6rem;
         }
         .pill-row .hiring { margin-top: 0; }
+        /* The last pill sits close under the row. */
+        .pill-row + .hiring { margin-top: 0.6rem; }
         footer {
             padding: 0 1.5rem 1.5rem;
             display: flex;
@@ -251,7 +250,7 @@
         /* This card carries more text than the home page; tighten vertical rhythm so it fits a 900px-tall window. */
         .glass { padding-top: 2.25rem; }
         .logo { width: min(240px, 60vw); margin-bottom: 1.25rem; }
-        .hiring { margin-top: 1.5rem; }
+        .hiring, .pill-row { margin-top: 1.5rem; }
         @media (max-width: 480px) {
             .badge { height: 42px; }
             .badge .big { font-size: 1rem; }
@@ -294,10 +293,8 @@
             .badge svg { width: 22px; height: 22px; }
             .badge .small { font-size: 0.52rem; }
             .badge .big { font-size: 0.95rem; }
-            .hiring {
-                margin-top: clamp(1.1rem, 3vh, 1.5rem);
-                font-size: 0.84rem;
-            }
+            .hiring, .pill-row { margin-top: clamp(1.1rem, 3vh, 1.5rem); }
+            .hiring { font-size: 0.84rem; }
             footer {
                 padding: 0 1rem max(1rem, env(safe-area-inset-bottom));
                 font-size: 0.8rem;
@@ -335,8 +332,8 @@
             .badge svg { width: 21px; height: 21px; }
             .badge .small { font-size: 0.5rem; }
             .badge .big { font-size: 0.9rem; }
+            .hiring, .pill-row { margin-top: 0.75rem; }
             .hiring {
-                margin-top: 0.75rem;
                 padding: 0.2rem 0.8rem;
                 font-size: 0.8rem;
             }
@@ -364,11 +361,11 @@
                     <span class="lines"><span class="small">Get it on</span><span class="big">Google Play</span></span>
                 </a>
             </div>
-            <a class="hiring" href="/auto-battles-online/">Also from us: Auto Battles Online &rarr;</a>
             <div class="pill-row">
                 <a class="hiring" href="/support/">Contact Support</a>
                 <a class="hiring" href="https://tier-9-game-studios-ltd.breezy.hr/">We&rsquo;re hiring!</a>
             </div>
+            <a class="hiring" href="/auto-battles-online/">Also from us: Auto Battles Online &rarr;</a>
         </div>
     </main>
     <footer>
