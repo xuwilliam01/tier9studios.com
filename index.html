@@ -1,655 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>9999+ Weapons: Idle RPG &mdash; Tier 9 Game Studios</title>
-    <meta name="description" content="9999+ Weapons: Idle RPG, an idle auto-battler RPG from Tier 9 Game Studios. Play the free demo on Steam, or the early access on Google Play."/>
-    <meta property="og:title" content="9999+ Weapons: Idle RPG"/>
-    <meta property="og:description" content="An idle auto-battler RPG from Tier 9 Game Studios. Play the free demo on Steam, or the early access on Google Play."/>
-    <meta property="og:type" content="website"/>
-    <meta property="og:url" content="https://www.tier9studios.com/"/>
-    <meta property="og:image" content="https://www.tier9studios.com/assets/bg.jpg"/>
-    <meta name="theme-color" content="#000000"/>
-    <link rel="icon" type="image/png" href="/assets/logo.png"/>
-    <link rel="preload" href="/assets/abw/biomes.json" as="fetch" crossorigin/>
-    <style>
-        :root {
-            --ink: #1a1c23;
-            --ink-dim: #3d414c;
-            --accent: #e8434f;
-            --blurple: #5865f2;
-            --steam: #171a21;
-            /* Display height of one 128-px floor tile. Monsters and props are drawn at their in-game size in these tiles. */
-            --cell: clamp(40px, 6.5vh, 88px);
-        }
-        @font-face {
-            font-family: "Ioskeley Mono";
-            src: url("/assets/fonts/IoskeleyMonoTerm-Regular.woff2") format("woff2");
-            font-weight: 400;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: "Ioskeley Mono";
-            src: url("/assets/fonts/IoskeleyMonoTerm-SemiBold.woff2") format("woff2");
-            font-weight: 600;
-            font-display: swap;
-        }
-        * { box-sizing: border-box; }
-        html, body { height: 100%; }
-        body {
-            margin: 0;
-            /* Black until the first biome has loaded, so the page fades in from black instead of flashing a color. */
-            background: #000000;
-            color: var(--ink);
-            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-            font-size: 16px;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-        /* One World 1 biome: its battle background layers, a floor of its tiles, props, and monsters.
-           The scene is one viewport tall and anchored to the bottom; 100vh is the largest viewport height on mobile,
-           so it never comes up short when the toolbar hides. A new scene fades in over the old one. */
-        .scene {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 100vh;
-            z-index: -1;
-            overflow: hidden;
-            opacity: 0;
-            transition: opacity 1.2s ease;
-        }
-        .scene.shown { opacity: 1; }
-        .layer {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-repeat: repeat-x;
-        }
-        .floor {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: calc(var(--cell) * 2.4);
-            background-repeat: repeat-x;
-            background-size: auto calc(var(--cell) * 4);
-        }
-        .prop, .monster {
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            background-repeat: no-repeat;
-        }
-        .monster { will-change: transform; }
-        /* A monster holds one sheet per animation, each with its image set once; a transition only swaps which is visible. */
-        .monster > div {
-            position: absolute;
-            inset: 0;
-            background-repeat: no-repeat;
-            visibility: hidden;
-        }
-        /* Fixed scrim behind the footer so its text stays readable on any artwork. */
-        body::after {
-            content: "";
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 7rem;
-            z-index: -1;
-            pointer-events: none;
-            background: linear-gradient(to top, rgba(10, 40, 20, 0.55), rgba(10, 40, 20, 0));
-        }
-        main {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* Keep the floor and the monsters on it clear of the card: 2.4 tiles of floor plus about 2 tiles of monster. */
-            padding: 2.5rem 1.25rem calc(var(--cell) * 4.4);
-        }
-        .glass {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            width: 100%;
-            max-width: 34rem;
-            padding: 3rem 2.5rem 2.5rem;
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.66);
-            -webkit-backdrop-filter: blur(16px) saturate(1.3);
-            backdrop-filter: blur(16px) saturate(1.3);
-            border: 1px solid rgba(255, 255, 255, 0.65);
-            box-shadow: 0 16px 48px rgba(10, 45, 80, 0.22);
-        }
-        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-            .glass { background: rgba(255, 255, 255, 0.93); }
-        }
-        .logo {
-            width: min(300px, 68vw);
-            height: auto;
-            margin-bottom: 2rem;
-        }
-        h1 {
-            margin: 0 0 0.4rem;
-            font-family: "Ioskeley Mono", ui-monospace, monospace;
-            font-size: clamp(1.5rem, 4.5vw, 1.9rem);
-            font-weight: 600;
-            line-height: 1.15;
-            letter-spacing: -0.01em;
-        }
-        .kicker {
-            margin: 0 0 0.5rem;
-            color: var(--ink-dim);
-            font-size: 1.02rem;
-            font-weight: 500;
-        }
-        .tagline {
-            margin: 0 0 2rem;
-            color: var(--ink-dim);
-            font-size: 1.02rem;
-            font-weight: 500;
-            max-width: 28rem;
-        }
-        .badges {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            width: 10.25rem;
-            height: 50px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            color: #ffffff;
-            text-decoration: none;
-        }
-        .badge-store { background: #000000; }
-        .badge-steam { background: var(--steam); }
-        .badge-discord { background: var(--blurple); }
-        .badge svg {
-            width: 26px;
-            height: 26px;
-            flex: none;
-            fill: currentColor;
-        }
-        .badge .lines {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            line-height: 1.15;
-        }
-        .badge .small {
-            font-size: 0.6rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-        .badge .big {
-            font-size: 1.15rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-        }
-        .hiring {
-            margin-top: 2rem;
-            display: inline-block;
-            padding: 0.35rem 1rem;
-            border: 1px solid var(--ink-dim);
-            border-radius: 999px;
-            color: var(--ink-dim);
-            font-family: "Ioskeley Mono", ui-monospace, monospace;
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .hiring:hover {
-            color: var(--accent);
-            border-color: var(--accent);
-        }
-        /* Two pills share a row under the badges, so the card stays short; on a narrow phone they wrap to two rows. */
-        .pill-row {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.6rem;
-        }
-        .pill-row .hiring { margin-top: 0; }
-        /* The last pill sits close under the row. */
-        .pill-row + .hiring { margin-top: 0.6rem; }
-        footer {
-            padding: 0 1.5rem 1.5rem;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.3rem 1.25rem;
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.92);
-            text-shadow: 0 1px 6px rgba(10, 40, 20, 0.5);
-        }
-        footer a {
-            color: rgba(255, 255, 255, 0.92);
-            text-decoration: none;
-        }
-        footer a:hover { text-decoration: underline; }
-        /* This card carries more text than the home page; tighten vertical rhythm so it fits a 900px-tall window. */
-        .glass { padding-top: 2.25rem; }
-        .logo { width: min(240px, 60vw); margin-bottom: 1.25rem; }
-        .hiring, .pill-row { margin-top: 1.5rem; }
-        @media (max-width: 480px) {
-            .badge { height: 42px; }
-            .badge .big { font-size: 1rem; }
-        }
-        @media (max-aspect-ratio: 3 / 4) {
-            main { padding: clamp(1rem, 3.5vh, 2rem) 0 calc(var(--cell) * 4.4); }
-            .glass {
-                width: min(84vw, 30rem);
-                padding: clamp(1.4rem, 3.5vh, 2.25rem) clamp(0.9rem, 4vw, 1.5rem) clamp(1.2rem, 3vh, 1.75rem);
-                border-radius: clamp(16px, 5vw, 22px);
-            }
-            .logo {
-                width: clamp(10rem, 55vw, 14rem);
-                margin-bottom: clamp(1rem, 2.5vh, 1.5rem);
-            }
-            h1 { font-size: clamp(1.3rem, 5.5vw, 1.65rem); }
-            .kicker { font-size: clamp(0.9rem, 3.8vw, 0.98rem); }
-            .tagline {
-                margin-bottom: clamp(1.1rem, 3vh, 1.5rem);
-                font-size: clamp(0.9rem, 3.8vw, 0.98rem);
-            }
-            .badges {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                width: 100%;
-                /* Cap at two badge widths + gap so badges never stretch wider than designed. */
-                max-width: calc(20.5rem + 0.55rem);
-                gap: 0.55rem;
-            }
-            .badge {
-                width: 100%;
-                height: clamp(38px, 10.5vw, 44px);
-                gap: 0.4rem;
-            }
-            .badge-discord {
-                grid-column: 1 / -1;
-                justify-self: center;
-                width: calc(50% - 0.275rem);
-            }
-            .badge svg { width: 22px; height: 22px; }
-            .badge .small { font-size: 0.52rem; }
-            .badge .big { font-size: 0.95rem; }
-            .hiring, .pill-row { margin-top: clamp(1.1rem, 3vh, 1.5rem); }
-            .hiring { font-size: 0.84rem; }
-            footer {
-                padding: 0 1rem max(1rem, env(safe-area-inset-bottom));
-                font-size: 0.8rem;
-            }
-        }
-        @media (max-width: 350px) and (max-aspect-ratio: 3 / 4) {
-            .glass { width: 90vw; }
-            .badges {
-                grid-template-columns: minmax(0, 10rem);
-                justify-content: center;
-            }
-            .badge-discord {
-                grid-column: auto;
-                width: 100%;
-            }
-        }
-        @media (max-height: 600px) and (min-aspect-ratio: 4 / 3) {
-            main { padding: 0.75rem 1rem; }
-            .glass { max-width: 34rem; padding: 1rem 1.5rem 0.9rem; }
-            .logo {
-                width: min(150px, 22vw);
-                margin-bottom: 0.5rem;
-            }
-            h1 { font-size: 1.25rem; }
-            .tagline {
-                margin-bottom: 0.75rem;
-                font-size: 0.85rem;
-            }
-            .badges { gap: 0.5rem; }
-            .badge {
-                width: 9.5rem;
-                height: 36px;
-                gap: 0.4rem;
-            }
-            .badge svg { width: 21px; height: 21px; }
-            .badge .small { font-size: 0.5rem; }
-            .badge .big { font-size: 0.9rem; }
-            .hiring, .pill-row { margin-top: 0.75rem; }
-            .hiring {
-                padding: 0.2rem 0.8rem;
-                font-size: 0.8rem;
-            }
-            footer {
-                padding-bottom: 0.5rem;
-                font-size: 0.75rem;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' https://team.tier9studios.com; base-uri 'none'; form-action 'none'">
+<title>9999+ Weapons: Idle RPG &mdash; Tier 9 Game Studios</title>
+<meta name="description" content="9999+ Weapons: Idle RPG, an idle auto-battler RPG from Tier 9 Game Studios. Play the free demo on Steam, or the early access on Google Play.">
+<link rel="canonical" href="https://www.tier9studios.com/">
+<meta property="og:site_name" content="Tier 9 Game Studios">
+<meta property="og:title" content="9999+ Weapons: Idle RPG">
+<meta property="og:description" content="An idle auto-battler RPG from Tier 9 Game Studios. Play the free demo on Steam, or the early access on Google Play.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.tier9studios.com/">
+<meta property="og:image" content="https://www.tier9studios.com/assets/bg.jpg">
+<meta name="theme-color" content="#000000">
+<meta name="t9-api" content="https://team.tier9studios.com">
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="preload" href="/assets/abw/biomes.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="/assets/site/site.css">
 </head>
-<body>
-    <main>
-        <div class="glass">
-            <img class="logo" src="/assets/logo.png" alt="Tier 9 Game Studios" width="900" height="648"/>
-            <p class="kicker">You seem to have stumbled upon&hellip;</p>
-            <h1>9999+ Weapons: Idle RPG</h1>
-            <p class="tagline">Our take on an open World Idle 2D RPG. Play the free demo on Steam, or the Early Access on Google Play</p>
-            <div class="badges">
-                <a class="badge badge-steam" href="https://store.steampowered.com/app/3510430/">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 4a5.5 5.5 0 1 1 -.309 10.992l-.078 -.007l-3.646 2.524l-.011 .094c-.267 1.775 -1.707 3.18 -3.571 3.38l-.209 .017h-.176a4 4 0 0 1 -3.756 -2.623l-.016 -.048l-2.122 -.91a1 1 0 0 1 -.599 -.8l-.007 -.119v-3.5a1 1 0 0 1 1.447 -.894l2.964 1.481l.174 -.1a4 4 0 0 1 2.15 -.482l.166 .014l2.126 -2.977l-.01 -.098a5.5 5.5 0 0 1 1.092 -3.758l.169 -.212a5.5 5.5 0 0 1 4.222 -1.974m0 3.5a2 2 0 1 0 0 4a2 2 0 0 0 0 -4"/></svg>
-                    <span class="lines"><span class="small">Demo on</span><span class="big">Steam</span></span>
-                </a>
-                <a class="badge badge-store" href="https://play.google.com/store/apps/details?id=com.tier9.abw">
-                    <svg viewBox="30 336.7 120.9 129.2" aria-hidden="true"><path fill="#ffd400" d="M119.2,421.2c15.3-8.4,27-14.8,28-15.3c3.2-1.7,6.5-6.2,0-9.7c-2.1-1.1-13.4-7.3-28-15.3l-20.1,20.2L119.2,421.2z"/><path fill="#ff3333" d="M99.1,401.1l-64.2,64.7c1.5,0.2,3.2-0.2,5.2-1.3c4.2-2.3,48.8-26.7,79.1-43.3L99.1,401.1L99.1,401.1z"/><path fill="#48ff48" d="M99.1,401.1l20.1-20.2c0,0-74.6-40.7-79.1-43.1c-1.7-1-3.6-1.3-5.3-1L99.1,401.1z"/><path fill="#3bccff" d="M99.1,401.1l-64.3-64.3c-2.6,0.6-4.8,2.9-4.8,7.6c0,7.5,0,107.5,0,113.8c0,4.3,1.7,7.4,4.9,7.7L99.1,401.1z"/></svg>
-                    <span class="lines"><span class="small">Get it on</span><span class="big">Google Play</span></span>
-                </a>
-            </div>
-            <div class="pill-row">
-                <a class="hiring" href="/support/">Contact Support</a>
-                <a class="hiring" href="https://tier-9-game-studios-ltd.breezy.hr/">We&rsquo;re hiring!</a>
-            </div>
-            <a class="hiring" href="/auto-battles-online/">Also from us: Auto Battles Online &rarr;</a>
+<body class="home">
+<div class="veil" aria-hidden="true"></div>
+
+<header class="top" id="main">
+  <a class="skip" href="#studio">Skip to content</a>
+  <div class="top__bar glass">
+    <a class="top__logo" href="#top"><img src="/assets/logo.png" width="900" height="648" alt="Tier 9 Game Studios, home"></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#studio">Studio</a></li>
+        <li><a href="#games">Games</a></li>
+        <li><a href="#community">Community</a></li>
+        <li><a class="btn" href="/careers/">Careers</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="landing" id="top">
+  <div class="card glass">
+    <img class="logo" src="/assets/logo.png" alt="Tier 9 Game Studios" width="900" height="648">
+    <p class="card__kicker">You seem to have stumbled upon&hellip;</p>
+    <h1>9999+ Weapons: Idle RPG</h1>
+    <p class="tagline">Our take on an open World Idle 2D RPG. Play the free demo on Steam, or the Early Access on Google Play</p>
+    <div class="badges">
+      <a class="badge badge-steam" href="https://store.steampowered.com/app/3510430/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 4a5.5 5.5 0 1 1 -.309 10.992l-.078 -.007l-3.646 2.524l-.011 .094c-.267 1.775 -1.707 3.18 -3.571 3.38l-.209 .017h-.176a4 4 0 0 1 -3.756 -2.623l-.016 -.048l-2.122 -.91a1 1 0 0 1 -.599 -.8l-.007 -.119v-3.5a1 1 0 0 1 1.447 -.894l2.964 1.481l.174 -.1a4 4 0 0 1 2.15 -.482l.166 .014l2.126 -2.977l-.01 -.098a5.5 5.5 0 0 1 1.092 -3.758l.169 -.212a5.5 5.5 0 0 1 4.222 -1.974m0 3.5a2 2 0 1 0 0 4a2 2 0 0 0 0 -4"/></svg>
+          <span class="lines"><span class="small">Demo on</span><span class="big">Steam</span></span>
+      </a>
+      <a class="badge badge-store" href="https://play.google.com/store/apps/details?id=com.tier9.abw">
+          <svg viewBox="30 336.7 120.9 129.2" aria-hidden="true"><path fill="#ffd400" d="M119.2,421.2c15.3-8.4,27-14.8,28-15.3c3.2-1.7,6.5-6.2,0-9.7c-2.1-1.1-13.4-7.3-28-15.3l-20.1,20.2L119.2,421.2z"/><path fill="#ff3333" d="M99.1,401.1l-64.2,64.7c1.5,0.2,3.2-0.2,5.2-1.3c4.2-2.3,48.8-26.7,79.1-43.3L99.1,401.1L99.1,401.1z"/><path fill="#48ff48" d="M99.1,401.1l20.1-20.2c0,0-74.6-40.7-79.1-43.1c-1.7-1-3.6-1.3-5.3-1L99.1,401.1z"/><path fill="#3bccff" d="M99.1,401.1l-64.3-64.3c-2.6,0.6-4.8,2.9-4.8,7.6c0,7.5,0,107.5,0,113.8c0,4.3,1.7,7.4,4.9,7.7L99.1,401.1z"/></svg>
+          <span class="lines"><span class="small">Get it on</span><span class="big">Google Play</span></span>
+      </a>
+    </div>
+    <a class="enter" href="#main">Enter Main Site <span aria-hidden="true">&rarr;</span></a>
+    <a class="hiring" href="/auto-battles-online/">Also from us: Auto Battles Online &rarr;</a>
+    <a class="hiring" href="#careers">We&rsquo;re hiring!</a>
+  </div>
+</div>
+
+<div class="site">
+
+<section id="studio" class="wrap section" aria-labelledby="studio-title">
+  <div class="panel glass glass--strong studio">
+    <div class="studio__text">
+      <span class="kicker">Tier 9 Game Studios</span>
+      <h1 id="studio-title">A small team in downtown Toronto</h1>
+      <p>Tier 9 Game Studios is ten people making cartoon idle RPGs. We launched Auto Battles Online in 2020 and still run it today. Our second game, 9999+ Weapons: Idle RPG, is in Early Access on Google Play, with a free demo on Steam.</p>
+      <p>Eight developers and two artists, working side by side.</p>
+    </div>
+    <ul class="facts" aria-label="Studio facts">
+      <li class="fact"><b>10</b><span>people on the team</span></li>
+      <li class="fact"><b>2</b><span>games, one live and one in Early Access</span></li>
+      <li class="fact"><b>2020</b><span>Auto Battles Online launches</span></li>
+      <li class="fact"><b>Toronto</b><span>on-site, downtown</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="games" class="wrap section" aria-labelledby="games-title">
+  <div class="panel glass glass--strong">
+    <div class="panel__head">
+      <div>
+        <span class="kicker">Our games</span>
+        <h2 id="games-title">Idle RPGs you can put down and pick back up</h2>
+      </div>
+      <p>Cartoon heroes, piles of loot, and fights that keep going while you&rsquo;re away.</p>
+    </div>
+    <div class="games">
+      <article class="game glass">
+        <div class="game__art game__art--map">
+          <img src="/assets/img/worldmap-1600.webp"
+               srcset="/assets/img/worldmap-960.webp 960w, /assets/img/worldmap-1600.webp 1600w"
+               sizes="(max-width: 760px) 92vw, 560px" width="1600" height="915" loading="lazy"
+               alt="The world of 9999+ Weapons: an island with grassland, a beach, jungle, peaks and a crystal cave.">
         </div>
-    </main>
-    <footer>
-        <span>&copy; Tier 9 Game Studios Ltd.</span>
-        <a href="/privacy/">Privacy</a>
-        <a href="/terms/">Terms</a>
-        <a href="/support/">Support</a>
-        <a href="https://tier-9-game-studios-ltd.breezy.hr/">Careers</a>
-    </footer>
-    <script>
-        // A live World 1 biome behind the card. /assets/abw/biomes.json lists five biomes, each with its battle background
-        // layers, floor, props and monsters, all cut from the game. Every load and every 30 s shows the next biome
-        // from a shuffled bag kept in localStorage, so no biome repeats until all five have been shown.
-        (function () {
-            var BAG_KEY = "t9.abw.biomeBag", LAST_KEY = "t9.abw.lastBiome";
-            var ROTATE_MS = 30000, FADE_MS = 1200;
-            var biomes = [], current = null, lastWidth = window.innerWidth;
+        <div class="game__body">
+          <span class="game__status game__status--new">Early Access</span>
+          <h3>9999+ Weapons: Idle RPG</h3>
+          <p>Our take on an open-world idle 2D RPG. Roam an island of grassland, beach, jungle, caves and dragon peaks. Free demo on Steam, Early Access on Google Play.</p>
+          <div class="badges">
+            <a class="badge badge-steam" href="https://store.steampowered.com/app/3510430/" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 4a5.5 5.5 0 1 1 -.309 10.992l-.078 -.007l-3.646 2.524l-.011 .094c-.267 1.775 -1.707 3.18 -3.571 3.38l-.209 .017h-.176a4 4 0 0 1 -3.756 -2.623l-.016 -.048l-2.122 -.91a1 1 0 0 1 -.599 -.8l-.007 -.119v-3.5a1 1 0 0 1 1.447 -.894l2.964 1.481l.174 -.1a4 4 0 0 1 2.15 -.482l.166 .014l2.126 -2.977l-.01 -.098a5.5 5.5 0 0 1 1.092 -3.758l.169 -.212a5.5 5.5 0 0 1 4.222 -1.974m0 3.5a2 2 0 1 0 0 4a2 2 0 0 0 0 -4"/></svg>
+              <span class="lines"><span class="small">Demo on</span><span class="big">Steam</span></span>
+            </a>
+            <a class="badge badge-store" href="https://play.google.com/store/apps/details?id=com.tier9.abw" rel="noopener">
+              <svg viewBox="30 336.7 120.9 129.2" aria-hidden="true"><path fill="#ffd400" d="M119.2,421.2c15.3-8.4,27-14.8,28-15.3c3.2-1.7,6.5-6.2,0-9.7c-2.1-1.1-13.4-7.3-28-15.3l-20.1,20.2L119.2,421.2z"/><path fill="#ff3333" d="M99.1,401.1l-64.2,64.7c1.5,0.2,3.2-0.2,5.2-1.3c4.2-2.3,48.8-26.7,79.1-43.3L99.1,401.1L99.1,401.1z"/><path fill="#48ff48" d="M99.1,401.1l20.1-20.2c0,0-74.6-40.7-79.1-43.1c-1.7-1-3.6-1.3-5.3-1L99.1,401.1z"/><path fill="#3bccff" d="M99.1,401.1l-64.3-64.3c-2.6,0.6-4.8,2.9-4.8,7.6c0,7.5,0,107.5,0,113.8c0,4.3,1.7,7.4,4.9,7.7L99.1,401.1z"/></svg>
+              <span class="lines"><span class="small">Early Access on</span><span class="big">Google Play</span></span>
+            </a>
+          </div>
+          <a class="link" href="/abw/">Game page</a>
+        </div>
+      </article>
+      <article class="game glass">
+        <div class="game__art">
+          <img src="/assets/img/keyart-1600.webp"
+               srcset="/assets/img/keyart-960.webp 960w, /assets/img/keyart-1600.webp 1600w"
+               sizes="(max-width: 760px) 92vw, 560px" width="1600" height="686" loading="lazy"
+               alt="Auto Battles Online: cartoon heroes in gold armour charge out of a night sky.">
+        </div>
+        <div class="game__body">
+          <span class="game__status">Live since 2020</span>
+          <h3>Auto Battles Online</h3>
+          <p>Build a party of heroes, gear them up, and send them into battle. They keep fighting and looting while you&rsquo;re offline. On iOS and Android.</p>
+          <div class="badges">
+            <a class="badge badge-store" href="https://apps.apple.com/ca/app/auto-battles-online-idle-pvp/id1536993948" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+              <span class="lines"><span class="small">Download on the</span><span class="big">App Store</span></span>
+            </a>
+            <a class="badge badge-store" href="https://play.google.com/store/apps/details?id=com.william.mobilegame" rel="noopener">
+              <svg viewBox="30 336.7 120.9 129.2" aria-hidden="true"><path fill="#ffd400" d="M119.2,421.2c15.3-8.4,27-14.8,28-15.3c3.2-1.7,6.5-6.2,0-9.7c-2.1-1.1-13.4-7.3-28-15.3l-20.1,20.2L119.2,421.2z"/><path fill="#ff3333" d="M99.1,401.1l-64.2,64.7c1.5,0.2,3.2-0.2,5.2-1.3c4.2-2.3,48.8-26.7,79.1-43.3L99.1,401.1L99.1,401.1z"/><path fill="#48ff48" d="M99.1,401.1l20.1-20.2c0,0-74.6-40.7-79.1-43.1c-1.7-1-3.6-1.3-5.3-1L99.1,401.1z"/><path fill="#3bccff" d="M99.1,401.1l-64.3-64.3c-2.6,0.6-4.8,2.9-4.8,7.6c0,7.5,0,107.5,0,113.8c0,4.3,1.7,7.4,4.9,7.7L99.1,401.1z"/></svg>
+              <span class="lines"><span class="small">Get it on</span><span class="big">Google Play</span></span>
+            </a>
+          </div>
+          <a class="link" href="/auto-battles-online/">Game page</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 
-            function rand(a, b) { return a + Math.random() * (b - a); }
-            function div(cls, parent) {
-                var d = document.createElement("div");
-                d.className = cls;
-                if (parent) parent.appendChild(d);
-                return d;
-            }
-            function url(f) { return 'url("' + f + '")'; }
-            function shuffle(a) {
-                for (var i = a.length - 1; i > 0; i--) {
-                    var j = Math.floor(Math.random() * (i + 1)), t = a[i];
-                    a[i] = a[j];
-                    a[j] = t;
-                }
-                return a;
-            }
-            function weighted(items) {
-                var total = 0, i;
-                for (i = 0; i < items.length; i++) total += items[i].weight;
-                var r = Math.random() * total;
-                for (i = 0; i < items.length; i++) if ((r -= items[i].weight) < 0) return items[i];
-                return items[items.length - 1];
-            }
-            // Private browsing can refuse storage; the rotation still works for the current visit.
-            function load(key, fallback) {
-                try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; }
-            }
-            function save(key, value) {
-                try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* keep going without persistence */ }
-            }
+<section id="community" class="wrap section" aria-labelledby="community-title">
+  <div class="community">
+    <div class="discord">
+      <span class="kicker">Community</span>
+      <h2 id="community-title">Come hang out on Discord</h2>
+      <p>Chat with other players and the team. Link your game account for community rewards, and talk with players in the game through World Chat.</p>
+      <a class="btn btn--light" href="https://discord.gg/pKbKFXm2xz" rel="noopener">Join our Discord</a>
+    </div>
+    <div class="follow glass glass--strong">
+      <h2>Follow the studio</h2>
+      <p class="quiet">News about the studio and our games.</p>
+      <ul>
+        <li><a class="btn" href="https://www.linkedin.com/company/tier-9-game-studios/" rel="noopener">LinkedIn</a></li>
+        <li><a class="btn" href="https://twitter.com/tier9studios" rel="noopener">X</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
 
-            // Take the next biome from the bag. A new bag never starts with the biome just shown.
-            function nextBiome() {
-                var ids = biomes.map(function (b) { return b.id; });
-                var bag = load(BAG_KEY, []).filter(function (id) { return ids.indexOf(id) >= 0; });
-                var lastId = load(LAST_KEY, null);
-                if (!bag.length) {
-                    bag = shuffle(ids.slice());
-                    if (bag.length > 1 && bag[0] === lastId) bag.push(bag.shift());
-                }
-                var id = bag.shift();
-                save(BAG_KEY, bag);
-                save(LAST_KEY, id);
-                return biomes[ids.indexOf(id)];
-            }
+<section id="team" class="wrap section" aria-labelledby="team-title">
+  <div class="panel glass glass--strong">
+    <div class="panel__head">
+      <div>
+        <span class="kicker">The team</span>
+        <h2 id="team-title">Who makes the games</h2>
+      </div>
+    </div>
+    <ul class="team">
+      <li class="person person--lead"><span class="person__mark" aria-hidden="true">W</span><span class="person__who"><b>William</b><span>CEO</span></span></li>
+      <li class="person person--lead"><span class="person__mark" aria-hidden="true">M</span><span class="person__who"><b>Michael</b><span>COO</span></span></li>
+      <li class="person"><span class="person__mark" aria-hidden="true">J</span><span class="person__who"><b>James</b><span>Developer</span></span></li>
+      <li class="person"><span class="person__mark" aria-hidden="true">N</span><span class="person__who"><b>Nanqi</b><span>Developer</span></span></li>
+      <li class="person"><span class="person__mark" aria-hidden="true">L</span><span class="person__who"><b>Lin</b><span>Developer</span></span></li>
+      <li class="person"><span class="person__mark" aria-hidden="true">C</span><span class="person__who"><b>Cassidy</b><span>Developer</span></span></li>
+      <li class="person"><span class="person__mark" aria-hidden="true">B</span><span class="person__who"><b>Bobo</b><span>Developer</span></span></li>
+      <li class="person"><span class="person__mark" aria-hidden="true">L</span><span class="person__who"><b>Logan</b><span>Developer</span></span></li>
+      <li class="person person--art"><span class="person__mark" aria-hidden="true">W</span><span class="person__who"><b>Weiwei</b><span>Artist</span></span></li>
+      <li class="person person--art"><span class="person__mark" aria-hidden="true">O</span><span class="person__who"><b>Olivia</b><span>Artist</span></span></li>
+    </ul>
+  </div>
+</section>
 
-            // Background layers are tiles one scene height tall, so every size below is in vh.
-            function addLayer(scene, l) {
-                var d = div("layer", scene), w = l.w * 100;
-                d.style.backgroundImage = url(l.file);
-                if (l.role === "anim") {
-                    // An animated band: a vertical sheet of frames for one strip of the background.
-                    var sheet = l.h * l.frames * 100;
-                    d.style.top = l.top * 100 + "vh";
-                    d.style.bottom = "auto";
-                    d.style.height = l.h * 100 + "vh";
-                    d.style.backgroundSize = w + "vh " + sheet + "vh";
-                    d.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: "0 -" + sheet + "vh" }],
-                        { duration: l.frames / l.fps * 1000, iterations: Infinity, easing: "steps(" + l.frames + ")" });
-                    return;
-                }
-                d.style.backgroundSize = w + "vh 100%";
-                if (l.role === "drift") {
-                    // Auto-scrolling clouds and fog: slide one tile width per loop, at the game's speed.
-                    d.style.left = -w + "vh";
-                    d.style.width = "calc(100% + " + w + "vh)";
-                    var a = l.dir > 0 ? 0 : w, b = l.dir > 0 ? w : 0;
-                    d.animate([{ transform: "translateX(" + a + "vh)" }, { transform: "translateX(" + b + "vh)" }],
-                        { duration: l.seconds * 1000, iterations: Infinity });
-                }
-            }
+<section id="work" class="wrap section" aria-labelledby="work-title">
+  <div class="panel glass glass--strong perks-panel">
+    <img class="perks-panel__potato" src="/assets/img/brotato.webp" width="319" height="477" alt="" loading="lazy">
+    <div class="panel__head">
+      <div>
+        <span class="kicker">Working here</span>
+        <h2 id="work-title">What it&rsquo;s like at Tier&nbsp;9</h2>
+      </div>
+    </div>
+    <ul class="perks">
+      <li class="perk"><h3>Ship fast</h3><p>Your features reach players within weeks, sometimes days.</p></li>
+      <li class="perk"><h3>Real ownership</h3><p>Make decisions that affect hundreds of thousands of players.</p></li>
+      <li class="perk"><h3>Together, on-site</h3><p>We work side by side in our downtown Toronto office.</p></li>
+      <li class="perk"><h3>Dinners and outings</h3><p>Team dinners and outings, on us.</p></li>
+      <li class="perk perk--wide"><h3>Full benefits plan</h3><p>Health, prescription drug, dental and vision coverage; life and long-term disability insurance; massage and physio.</p></li>
+    </ul>
+  </div>
+</section>
 
-            function build(b) {
-                var s = { biome: b, el: div("scene"), critters: [] };
-                s.el.setAttribute("aria-hidden", "true");
-                b.layers.forEach(function (l) { addLayer(s.el, l); });
-                // Bushes and trees stand behind the floor, so its top tile row covers their base.
-                s.back = div("layer", s.el);
-                s.floor = div("floor", s.el);
-                s.floor.style.backgroundImage = url(b.floor);
-                s.props = div("layer", s.el);
-                s.crew = div("layer", s.el);
-                return s;
-            }
+<section id="careers" class="wrap section" aria-labelledby="careers-title">
+  <div class="panel glass glass--strong" data-roles data-roles-limit="5">
+    <div class="panel__head">
+      <div>
+        <span class="kicker">Careers</span>
+        <h2 id="careers-title">Open roles</h2>
+      </div>
+    </div>
+    <p class="state" data-roles-paused hidden>Applications are paused for now. Please check back soon.</p>
+    <noscript><p class="state"><a class="link" href="/careers/">See open roles</a></p></noscript>
+    <div data-roles-loading hidden><span class="skel"></span><span class="skel"></span></div>
+    <ul class="roles" data-roles-list hidden></ul>
+    <p class="state" data-roles-empty hidden>No open roles right now. New openings will appear here and on our <a class="link" href="/careers/">careers page</a>.</p>
+    <p class="state" data-roles-error hidden>The list didn&rsquo;t load. <button class="link" type="button" data-roles-retry>Try again</button></p>
+    <p class="state" data-roles-more hidden><a class="link" href="/careers/">See every open role</a></p>
+    <div class="careers-foot">
+      <a class="btn" href="/careers/">Careers at Tier 9</a>
+      <p class="note">Interview invitations and offers only come from @tier9studios.com addresses.</p>
+    </div>
+  </div>
+</section>
 
-            // Props stand on the floor's top edge, sunk by their most common in-game depth, at their in-game size.
-            // Back-row props (bushes, trees) and front props are scattered as two separate rows.
-            function placeProps(s) {
-                var decor = s.biome.decor;
-                placeRow(s, s.back, decor.filter(function (p) { return p.back; }), 1, 4);
-                placeRow(s, s.props, decor.filter(function (p) { return !p.back; }), 1.5, 5);
-            }
+</div>
 
-            function placeRow(s, layer, items, minGap, maxGap) {
-                layer.textContent = "";
-                if (!items.length) return;
-                var w = layer.clientWidth, floorH = s.floor.offsetHeight, cell = floorH / 2.4;
-                var x = rand(-1, 1) * cell;
-                while (x < w) {
-                    var p = weighted(items), pw = p.w * cell, ph = p.h * cell;
-                    var d = div("prop", layer);
-                    d.style.width = pw + "px";
-                    d.style.height = ph + "px";
-                    d.style.backgroundImage = url(p.file);
-                    d.style.backgroundSize = p.frames * pw + "px " + ph + "px";
-                    var flip = Math.random() < p.flip ? " scaleX(-1)" : "";
-                    d.style.transform = "translate(" + x + "px," + -(floorH - p.sink * cell) + "px)" + flip;
-                    if (p.frames > 1) {
-                        d.animate([{ backgroundPosition: "0 0" }, { backgroundPosition: -p.frames * pw + "px 0" }],
-                            { duration: p.frames / p.fps * 1000, iterations: Infinity, easing: "steps(" + p.frames + ")" });
-                    }
-                    x += pw + rand(minGap, maxGap) * cell;
-                }
-            }
+</main>
 
-            // Three to eight monsters by screen width, cycling through the biome's picks so each one appears.
-            function spawnCrew(s) {
-                s.crew.textContent = "";
-                s.critters = [];
-                var w = s.crew.clientWidth, floorH = s.floor.offsetHeight;
-                var picks = shuffle(s.biome.monsters.slice());
-                var count = Math.max(3, Math.min(8, Math.round(w / 240)));
-                for (var i = 0; i < count; i++) {
-                    var k = {
-                        m: picks[i % picks.length],
-                        el: div("monster", s.crew),
-                        cell: floorH / 2.4,
-                        floorH: floorH,
-                        x: (i + rand(0, 0.8)) * w / count,
-                        dir: Math.random() < 0.5 ? -1 : 1,
-                        // Feet land inside the walkable band of the floor's top tile row.
-                        sink: rand(s.biome.feet[0], s.biome.feet[1])
-                    };
-                    // Lower feet are nearer the viewer, so they draw in front.
-                    k.el.style.zIndex = String(Math.round(k.sink * 100));
-                    k.sheets = { walk: sheet(k.el, k.m.walk), idle: sheet(k.el, k.m.idle) };
-                    setAnim(k, "walk", rand(2, 7));
-                    k.t = rand(0, 1);
-                    s.critters.push(k);
-                    draw(k);
-                }
-            }
+<footer class="landing-foot">
+  <span>&copy; Tier 9 Game Studios Ltd.</span>
+  <a href="/privacy/">Privacy</a>
+  <a href="/terms/">Terms</a>
+  <a href="/careers/">Careers</a>
+</footer>
 
-            function sheet(parent, a) {
-                var d = div("", parent);
-                d.style.backgroundImage = url(a.file);
-                d.style.backgroundSize = a.frames * 100 + "% 100%";
-                return d;
-            }
+<footer class="foot">
+  <div class="foot__in">
+    <span>&copy; Tier 9 Game Studios Ltd., Toronto</span>
+    <ul>
+      <li><a href="/careers/">Careers</a></li>
+      <li><a href="/privacy/">Privacy</a></li>
+      <li><a href="/careers/privacy/">Applicant privacy</a></li>
+      <li><a href="/terms/">Terms</a></li>
+    </ul>
+  </div>
+</footer>
 
-            // Switch animation without reloading anything: resize the box and show the other sheet in the same frame.
-            function setAnim(k, name, seconds) {
-                var a = k.m[name];
-                if (k.state) k.sheets[k.state].style.visibility = "hidden";
-                k.sheets[name].style.visibility = "visible";
-                k.anim = a;
-                k.state = name;
-                k.t = 0;
-                k.timer = seconds;
-                k.h = a.tiles * k.cell;
-                k.w = k.h * a.aspect;
-                k.el.style.width = k.w + "px";
-                k.el.style.height = k.h + "px";
-                // Mirror around the sprite's pivot, so turning around does not shift it sideways.
-                k.el.style.transformOrigin = a.pivotX * 100 + "% 100%";
-            }
-
-            function draw(k) {
-                var a = k.anim, f = Math.floor(k.t * a.fps) % a.frames;
-                k.sheets[k.state].style.backgroundPosition = (a.frames > 1 ? f * 100 / (a.frames - 1) : 0) + "% 0";
-                // Each strip's bottom row is the lowest foot pixel of its frames: stand it on the path line.
-                // (The game's sprite pivot sits a little below the art and would leave a visible gap.)
-                var bottom = k.floorH - k.sink * k.cell;
-                var flip = k.dir === k.m.faces ? 1 : -1;
-                k.el.style.transform = "translate3d(" + (k.x - a.pivotX * k.w) + "px," + -bottom + "px,0) scaleX(" + flip + ")";
-            }
-
-            function step(k, dt, w) {
-                var a = k.anim;
-                k.t += dt;
-                k.timer -= dt;
-                var f = Math.floor(k.t * a.fps) % a.frames;
-                if (k.state === "walk") {
-                    // movementSpeed is in thousandths of a world unit per second; one floor tile is 1.28 units tall.
-                    var speed = k.m.speed / 1000 * k.cell / 1.28;
-                    // A hopper only moves while airborne (frames 2 to 6), five frames out of its cycle.
-                    if (!k.m.hop) k.x += k.dir * speed * dt;
-                    else if (f >= 2 && f <= 6) k.x += k.dir * speed * a.frames / 5 * dt;
-                    if (k.dir > 0 && k.x - k.w > w) k.x = -k.w;
-                    if (k.dir < 0 && k.x + k.w < 0) k.x = w + k.w;
-                    // Stop only at the start of a cycle, so nobody freezes in mid-air.
-                    if (k.timer <= 0 && f === 0) setAnim(k, "idle", rand(1.2, 3.5));
-                } else if (k.timer <= 0) {
-                    if (Math.random() < 0.3) k.dir = -k.dir;
-                    setAnim(k, "walk", rand(3, 9));
-                }
-                draw(k);
-            }
-
-            function populate(s) {
-                placeProps(s);
-                spawnCrew(s);
-            }
-
-            // Wait (briefly) for every image of the biome to download and decode: background, floor, props, and both
-            // animations of every monster. Without this, a monster's idle sheet first loads at its first stop and the
-            // monster blinks out while it arrives. The decoded images are kept so the browser does not drop them.
-            var decoded = [];
-            function ready(b) {
-                var files = b.layers.map(function (l) { return l.file; }).concat([b.floor]);
-                b.decor.forEach(function (p) { files.push(p.file); });
-                b.monsters.forEach(function (m) { files.push(m.walk.file, m.idle.file); });
-                decoded = [];
-                var loads = files.map(function (f) {
-                    var img = new Image();
-                    img.src = f;
-                    decoded.push(img);
-                    return img.decode ? img.decode().catch(function () {}) : Promise.resolve();
-                });
-                return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 4000); })]);
-            }
-
-            function show(b) {
-                return ready(b).then(function () {
-                    var old = current, s = build(b);
-                    // After any older scene, so the new one fades in on top of it.
-                    document.body.insertBefore(s.el, document.querySelector("main"));
-                    populate(s);
-                    current = s;
-                    requestAnimationFrame(function () { s.el.classList.add("shown"); });
-                    if (old) setTimeout(function () { old.el.remove(); }, FADE_MS + 100);
-                });
-            }
-
-            function rotate() {
-                show(nextBiome()).then(function () { setTimeout(rotate, ROTATE_MS); });
-            }
-
-            var last = 0;
-            function tick(now) {
-                // Clamp the step so a background tab does not teleport everyone on return.
-                var dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
-                last = now;
-                if (current) {
-                    var w = current.crew.clientWidth;
-                    for (var i = 0; i < current.critters.length; i++) step(current.critters[i], dt, w);
-                }
-                requestAnimationFrame(tick);
-            }
-
-            // Re-lay props and monsters only when the width changes: mobile toolbars change the height on every scroll.
-            var resizeTimer;
-            window.addEventListener("resize", function () {
-                if (window.innerWidth === lastWidth) return;
-                lastWidth = window.innerWidth;
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function () { if (current) populate(current); }, 200);
-            });
-
-            fetch("/assets/abw/biomes.json")
-                .then(function (r) { return r.json(); })
-                .then(function (list) {
-                    biomes = list;
-                    rotate();
-                    requestAnimationFrame(tick);
-                });
-        })();
-    </script>
+<script src="/assets/site/world.js"></script>
+<script type="module" src="/assets/site/careers-list.js"></script>
 </body>
 </html>

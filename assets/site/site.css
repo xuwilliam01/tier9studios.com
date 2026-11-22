@@ -1,0 +1,764 @@
+/* Tier 9 Game Studios. Every page draws a live World 1 scene from 9999+ Weapons (world.js) behind it.
+   The home page opens on the landing card over the sharp scene. Its "Enter Main Site" link goes to #main, the
+   main site's header. While the address names #main or any part of the main site, the landing gives way to the
+   main site and the veil blurs the scene behind it. The other pages (body.in-site) always show the main site's
+   look. */
+
+@font-face {
+    font-family: "Ioskeley Mono";
+    src: url("/assets/fonts/IoskeleyMonoTerm-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Ioskeley Mono";
+    src: url("/assets/fonts/IoskeleyMonoTerm-SemiBold.woff2") format("woff2");
+    font-weight: 600;
+    font-display: swap;
+}
+
+:root {
+    --ink: #1a1c23;
+    --ink-dim: #3d414c;
+    --accent: #e8434f;
+    --blurple: #5865f2;
+    --steam: #171a21;
+    --red: #b3261e;
+    /* The "Enter Main Site" button: white text reads at 5.0:1 on it, and 6.5:1 on the hover colour. */
+    --enter: #cf3340;
+    --enter-hover: #b3261e;
+    --line: rgba(26, 28, 35, 0.14);
+    --glass: rgba(255, 255, 255, 0.66);
+    --glass-strong: rgba(255, 255, 255, 0.84);
+    --glass-edge: rgba(255, 255, 255, 0.65);
+    --shadow: 0 16px 48px rgba(10, 45, 80, 0.22);
+    --mono: "Ioskeley Mono", ui-monospace, monospace;
+    --max: 72rem;
+    --gutter: clamp(16px, 4vw, 32px);
+    --radius: 22px;
+    /* Display height of one 128-px floor tile. Monsters and props are drawn at their in-game size in these tiles. */
+    --cell: clamp(40px, 6.5vh, 88px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 84px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    /* Black until the first biome has loaded, so the page fades in from black instead of flashing a color. */
+    background: #000000;
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+body > main { flex: 1 0 auto; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-underline-offset: 0.18em; }
+p, h1, h2, h3, h4, ul, ol, fieldset { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+fieldset { padding: 0; border: 0; min-width: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid #1a5fd0; outline-offset: 3px; }
+/* On the navy footer and the Discord blue, a blue ring would not show. */
+.foot :focus-visible, .discord :focus-visible { outline-color: #fff; }
+[tabindex="-1"]:focus { outline: none; }
+
+h1, h2, h3 { font-family: var(--mono); font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }
+h1 { font-size: clamp(1.5rem, 4.5vw, 1.9rem); }
+h2 { font-size: clamp(1.45rem, 3.2vw, 2rem); }
+h3 { font-size: clamp(1.1rem, 1.8vw, 1.3rem); }
+
+.wrap { width: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+.skip { position: absolute; left: 12px; top: -80px; z-index: 50; background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 8px; }
+.skip:focus { top: 12px; }
+/* Read by screen readers, not shown. */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.quiet { color: var(--ink-dim); }
+
+/* ---------- the living scene (world.js builds it) ---------- */
+/* One World 1 biome: its battle background layers, a floor of its tiles, props, and monsters.
+   The scene is one viewport tall and anchored to the bottom; 100vh is the largest viewport height on mobile,
+   so it never comes up short when the toolbar hides. A new scene fades in over the old one. */
+.scene {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+.scene.shown { opacity: 1; }
+.layer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-repeat: repeat-x;
+}
+.floor {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--cell) * 2.4);
+    background-repeat: repeat-x;
+    background-size: auto calc(var(--cell) * 4);
+}
+.prop, .monster {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    background-repeat: no-repeat;
+}
+.monster { will-change: transform; }
+/* A monster holds one sheet per animation, each with its image set once; a transition only swaps which is visible. */
+.monster > div {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    visibility: hidden;
+}
+
+/* ---------- the veil: puts the scene out of focus behind the main site ---------- */
+/* It sits over the scenes (world.js inserts them just before it) and under the page. Blurring through a
+   backdrop filter, rather than a filter on the scene itself, keeps the screen edges from fading to black. */
+.veil {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 0.8s ease, -webkit-backdrop-filter 0.8s ease, backdrop-filter 0.8s ease;
+}
+.in-site .veil {
+    background-color: rgba(6, 14, 24, 0.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.1);
+    backdrop-filter: blur(14px) saturate(1.1);
+}
+/* The home page switches on the address alone, so the switch, the back button and links to /#careers work
+   without any script. #main is the header, so after "Enter Main Site" the Tab key starts at the top of the
+   main site, on the skip link inside the header. A browser without :has() shows the landing and the main
+   site one after the other. */
+@supports selector(:has(*)) {
+    .home:has(#main:target, .site :target) .veil {
+        background-color: rgba(6, 14, 24, 0.2);
+        -webkit-backdrop-filter: blur(14px) saturate(1.1);
+        backdrop-filter: blur(14px) saturate(1.1);
+    }
+    .home:has(#main:target, .site :target) .site .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .home:not(:has(#main:target, .site :target)) :is(.top, .site, .foot) { display: none; }
+    .home:has(#main:target, .site :target) :is(.landing, .landing-foot) { display: none; }
+}
+/* The main site fades in. The animation must not keep filling once it ends: while it applies, the header is
+   its own layer, and the bar's backdrop blur cannot see the page scrolling behind it. */
+@media (prefers-reduced-motion: no-preference) {
+    .home .top, .home .site, .home .foot { animation: arrive 0.6s ease; }
+}
+@keyframes arrive { from { opacity: 0; } }
+
+/* ---------- glass ---------- */
+.glass {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    backdrop-filter: blur(16px) saturate(1.3);
+    border: 1px solid var(--glass-edge);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+/* Long text and forms sit on a more opaque pane, so the scene never fights the words. */
+.glass--strong { background: var(--glass-strong); }
+/* Behind the main site the veil has already blurred the scene, so panels skip their own blur: it would look
+   the same and cost another blur on every frame of the animation. The header keeps it, since the page
+   scrolls under it. The home page's version of this rule sits with its veil rule, under @supports above. */
+.in-site main .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass { background: rgba(255, 255, 255, 0.93); }
+}
+
+/* ---------- store badges ---------- */
+.badges { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 10.25rem;
+    height: 50px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    text-decoration: none;
+}
+.badge-store { background: #000000; }
+.badge-steam { background: var(--steam); }
+.badge svg { width: 26px; height: 26px; flex: none; fill: currentColor; }
+.badge .lines { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+.badge .small { font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.badge .big { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+
+/* ---------- the landing: the live landing page, with the "Enter Main Site" button ---------- */
+/* To make room for the button, the card is more compact than the live one on every layout: a smaller logo
+   and tighter padding and gaps. That keeps its bottom edge where the live card's was, clear of the monsters. */
+.home > main { display: flex; flex-direction: column; }
+.landing {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Keep the floor and the monsters on it clear of the card: 2.4 tiles of floor plus about 2 tiles of monster. */
+    padding: 2.5rem 1.25rem calc(var(--cell) * 4.4);
+}
+.card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: 34rem;
+    padding: 2rem 2.5rem 2rem;
+}
+.card .logo { width: min(190px, 60vw); height: auto; margin-bottom: 1rem; }
+/* The live title wraps without balancing; the main site's headings balance theirs. */
+.card h1 { margin-bottom: 0.4rem; text-wrap: wrap; }
+.card__kicker, .tagline { color: var(--ink-dim); font-size: 1.02rem; font-weight: 500; }
+.card__kicker { margin-bottom: 0.5rem; }
+.tagline { margin-bottom: 1.5rem; max-width: 28rem; }
+.card .badges { justify-content: center; }
+/* The way into the main site: as wide as the two badges above it, so the three read as one block. */
+.enter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: calc(20.5rem + 0.75rem);
+    max-width: 100%;
+    height: 52px;
+    margin-top: 0.75rem;
+    border-radius: 10px;
+    background: var(--enter);
+    color: #ffffff;
+    font-family: var(--mono);
+    font-size: 1.12rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 10px 24px rgba(120, 20, 30, 0.32);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.enter:hover { background: var(--enter-hover); box-shadow: 0 12px 28px rgba(120, 20, 30, 0.42); }
+.enter span { display: inline-block; transition: transform 0.2s ease; }
+.enter:hover span { transform: translateX(4px); }
+.hiring {
+    margin-top: 1.25rem;
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    border: 1px solid var(--ink-dim);
+    border-radius: 999px;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.hiring:hover { color: var(--accent); border-color: var(--accent); }
+/* A second pill sits close under the first. */
+.hiring + .hiring { margin-top: 0.6rem; }
+.landing-foot {
+    padding: 0 1.5rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem 1.25rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 6px rgba(10, 40, 20, 0.5);
+}
+.landing-foot a { color: rgba(255, 255, 255, 0.92); text-decoration: none; text-underline-offset: auto; }
+.landing-foot a:hover { text-decoration: underline; }
+/* Fixed scrim behind the footer so its text stays readable on any artwork. */
+.landing-foot::before {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 7rem;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(10, 40, 20, 0.55), rgba(10, 40, 20, 0));
+}
+
+/* ---------- buttons and links ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border: 0;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.btn:hover { background: var(--enter); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { cursor: progress; opacity: 0.6; }
+.btn[disabled]:hover { background: var(--ink); }
+.btn--light { background: #fff; color: var(--ink); }
+.btn--light:hover { background: var(--ink); color: #fff; }
+
+.link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    cursor: pointer;
+}
+.link:hover { color: var(--red); }
+
+/* ---------- header ---------- */
+.top { position: sticky; top: 0; z-index: 30; padding: 12px var(--gutter) 0; }
+.top__bar {
+    /* As wide as the panels below it, which sit inside .wrap's gutters. */
+    max-width: calc(var(--max) - 2 * var(--gutter));
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 8px 6px 16px;
+    border-radius: 16px;
+}
+.top__logo img { height: 40px; width: auto; }
+.top ul { display: flex; align-items: center; gap: clamp(4px, 1.6vw, 18px); }
+.top__bar a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 8px;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.top li a:not(.btn):hover { color: var(--red); }
+.top .btn { min-height: 44px; padding-inline: 1rem; font-size: 0.92rem; }
+
+/* ---------- the main site's sections ---------- */
+/* The gap between two panels is taller than the header, and a link to a section stops with that section's
+   panel just under the header (scroll-padding-top less this margin), so the panel before it is off screen
+   instead of showing above and through the header. */
+.section { padding-block: clamp(40px, 4vw, 44px); scroll-margin-top: -44px; }
+.panel { padding: clamp(24px, 4vw, 48px); }
+.panel__head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 32px; margin-bottom: clamp(20px, 3vw, 32px); }
+.panel__head p { max-width: 36em; color: var(--ink-dim); }
+.kicker { display: block; margin-bottom: 0.4rem; color: var(--red); font-family: var(--mono); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* the studio */
+.studio { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+.studio h1 { font-size: clamp(1.7rem, 4vw, 2.5rem); }
+.studio__text p { margin-top: 1rem; font-size: 1.06rem; max-width: 36em; }
+.studio__text p:first-of-type { margin-top: 1.2rem; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fact { padding: 18px 18px 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--line); }
+.fact b { display: block; font-family: var(--mono); font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 600; line-height: 1.1; }
+.fact span { display: block; margin-top: 4px; color: var(--ink-dim); font-size: 0.92rem; line-height: 1.35; }
+
+/* games */
+.games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 28px); }
+.game { display: flex; flex-direction: column; overflow: hidden; }
+.game__art { aspect-ratio: 16 / 9; overflow: hidden; background: #0b1832; }
+.game__art img { width: 100%; height: 100%; object-fit: cover; }
+.game__art--map { background: #0b76e0; }
+.game__body { display: flex; flex-direction: column; flex: 1; gap: 0.6rem; padding: clamp(20px, 2.6vw, 30px); }
+.game__status { align-self: flex-start; padding: 2px 10px; border-radius: 999px; background: var(--ink); color: #fff; font-family: var(--mono); font-size: 0.75rem; font-weight: 600; }
+.game__status--new { background: var(--red); }
+.game__body p { color: var(--ink-dim); }
+.game__body .badges { margin-top: auto; padding-top: 0.8rem; }
+.game__body .badge { width: auto; min-width: 10.25rem; height: 46px; padding: 0 1rem; }
+
+/* team */
+/* Ten people stand two or five to a row, so every row is full. */
+.team { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 1000px) { .team { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.person { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--line); }
+.person__mark {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-family: var(--mono);
+    font-weight: 600;
+}
+.person--art .person__mark { background: var(--enter); }
+.person--lead .person__mark { background: var(--blurple); }
+.person__who b { display: block; line-height: 1.2; }
+.person__who span { display: block; color: var(--ink-dim); font-size: 0.88rem; line-height: 1.3; }
+
+/* working here */
+.perks-panel { position: relative; }
+/* Five cards: the last one, the longest, is two columns wide, so every row is full at three and at two columns. */
+.perks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.perk--wide { grid-column: span 2; }
+.perk { padding: 20px 20px 18px; border-radius: 16px; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--line); }
+.perk h3 { font-size: 1.05rem; }
+.perk p { margin-top: 6px; color: var(--ink-dim); font-size: 0.96rem; line-height: 1.45; }
+/* The potato stands inside the panel, beside the heading: above the panel's edge, the header would cut it off. */
+.perks-panel__potato { position: absolute; right: clamp(24px, 4vw, 48px); top: clamp(12px, 1.6vw, 20px); width: clamp(60px, 5.6vw, 80px); pointer-events: none; }
+
+/* open roles */
+.roles { border-top: 1px solid var(--line); }
+.roles li { border-bottom: 1px solid var(--line); }
+.role {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 28px;
+    align-items: center;
+    padding: 18px 4px;
+    text-decoration: none;
+}
+.role__title { font-family: var(--mono); font-size: clamp(1.05rem, 1.8vw, 1.25rem); font-weight: 600; line-height: 1.25; }
+.role__meta { grid-column: 1; color: var(--ink-dim); font-size: 0.95rem; }
+/* A line of facts about a role wraps between the facts, never inside one ("Full-time"). */
+.fact-item { display: inline-block; }
+.role__go { grid-column: 2; grid-row: 1 / span 2; font-weight: 600; white-space: nowrap; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.18em; }
+.role:hover .role__title, .role:hover .role__go { color: var(--red); }
+.state { margin-top: 4px; }
+.roles + .state, .state + .state { margin-top: 16px; }
+.state .btn { margin-top: 14px; }
+.careers-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 22px; }
+.note { color: var(--ink-dim); font-size: 0.92rem; }
+.skel { display: block; height: 1.1em; max-width: 24em; background: rgba(26, 28, 35, 0.1); border-radius: 6px; margin: 16px 0; }
+.skel--big { height: 2.6em; max-width: 32em; }
+
+/* community */
+.community { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: clamp(16px, 2.4vw, 28px); }
+.discord { padding: clamp(24px, 4vw, 44px); border-radius: var(--radius); background: var(--blurple); color: #fff; box-shadow: var(--shadow); }
+.discord h2 { color: #fff; }
+.discord .kicker { color: #fff; }
+.discord p { margin-top: 0.8rem; max-width: 30em; font-size: 1.06rem; }
+.discord .btn { margin-top: 1.4rem; }
+.follow { display: flex; flex-direction: column; justify-content: center; gap: 0.8rem; padding: clamp(24px, 4vw, 44px); }
+.follow ul { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 0.4rem; }
+
+/* ---------- the main site's footer ---------- */
+.foot {
+    margin-top: clamp(28px, 4vw, 48px);
+    padding: 18px var(--gutter) max(18px, env(safe-area-inset-bottom));
+    background: rgba(8, 22, 40, 0.62);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.88rem;
+}
+.foot__in { max-width: calc(var(--max) - 2 * var(--gutter)); margin-inline: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 24px; }
+.foot ul { display: flex; flex-wrap: wrap; gap: 0 1.25rem; }
+.foot a { display: inline-flex; align-items: center; min-height: 44px; color: rgba(255, 255, 255, 0.92); text-decoration: none; }
+.foot a:hover { text-decoration: underline; }
+
+/* ---------- careers pages ---------- */
+.page { padding-block: clamp(20px, 3vw, 36px) 0; display: grid; gap: clamp(16px, 2.4vw, 28px); align-content: start; }
+.page-head h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); }
+.page-head p { margin-top: 0.8rem; font-size: 1.1rem; color: var(--ink-dim); max-width: 34em; }
+/* A link inside a sentence keeps the sentence's line height. */
+.page-head p .link { display: inline; min-height: 0; }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: step; }
+.step { padding: 18px; border-radius: 16px; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--line); }
+.step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 10px; border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--mono); font-weight: 600; }
+.step h3 { font-size: 1rem; }
+.step p { margin-top: 4px; color: var(--ink-dim); font-size: 0.94rem; line-height: 1.45; }
+
+.stack { display: grid; gap: clamp(16px, 2.4vw, 28px); }
+/* A role, its form and the notice read best at a text width, centred in the page. */
+.posting, .apply, .posting-state, .narrow-panel { width: 100%; max-width: 54rem; margin-inline: auto; }
+
+.back { display: inline-flex; align-items: center; min-height: 44px; font-family: var(--mono); font-size: 0.92rem; font-weight: 600; }
+.posting h1 { margin-top: 6px; font-size: clamp(1.7rem, 4.6vw, 2.5rem); }
+.posting__meta { margin-top: 12px; color: var(--ink-dim); font-size: 1.05rem; }
+.posting__lead { margin-top: 18px; font-size: 1.15rem; line-height: 1.5; }
+.posting__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; margin-top: 24px; }
+.posting .prose { margin-top: clamp(24px, 4vw, 40px); padding-top: clamp(20px, 3vw, 32px); border-top: 1px solid var(--line); }
+/* The loading state holds the page open; the not-found, closed and error states fit their words. */
+.posting-state[data-pos-loading] { min-height: 40vh; }
+.posting-state h1 { font-size: clamp(1.7rem, 4.6vw, 2.5rem); }
+.posting-state p { margin-top: 14px; font-size: 1.1rem; max-width: 28em; }
+.posting-state .btn { margin-top: 22px; }
+
+.prose > * + * { margin-top: 0.9em; }
+.prose h3 { font-size: 1.2rem; margin-top: 1.6em; }
+.prose h3:first-child { margin-top: 0; }
+.prose h4 { font-size: 1.05rem; font-weight: 700; margin-top: 1.5em; }
+.prose ul, .prose ol { display: grid; gap: 7px; }
+.prose li { padding-left: 1.4em; position: relative; }
+.prose ul > li::before { content: ""; position: absolute; left: 0.2em; top: 0.62em; width: 0.42em; height: 0.42em; border-radius: 50%; background: var(--accent); }
+.prose ol { counter-reset: item; }
+.prose ol > li::before { counter-increment: item; content: counter(item) "."; position: absolute; left: 0; font-weight: 700; }
+.prose hr { border: 0; border-top: 1px solid var(--line); margin-block: 1.8em; }
+
+/* the application form */
+.apply h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); }
+.apply__role { margin: 4px 0 22px; color: var(--ink-dim); font-size: 1.1rem; font-weight: 600; }
+.add-link { margin: -10px 0 14px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.field { margin-bottom: 22px; }
+.field-label { display: block; font-weight: 700; margin-bottom: 6px; padding: 0; }
+.field-optional { font-weight: 400; color: var(--ink-dim); }
+.field input[type="text"], .field input[type="email"], .field input[type="tel"], .field input[type="url"], .field textarea {
+    display: block;
+    width: 100%;
+    min-height: 50px;
+    padding: 11px 13px;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid rgba(26, 28, 35, 0.35);
+    border-radius: 10px;
+    appearance: none;
+}
+.field input:focus-visible, .field textarea:focus-visible { border-color: var(--ink); }
+.field textarea { min-height: 150px; resize: vertical; }
+.field.has-error input, .field.has-error textarea, .field.has-error .drop, .field.has-error .chosen, .field.has-error .choice { border-color: var(--red); border-width: 2px; }
+.field-error { margin-top: 6px; color: var(--red); font-weight: 600; }
+/* The resume: a drop area around the real file input, so it works by click, keyboard and drag. */
+.drop { position: relative; display: grid; gap: 2px; padding: 20px 16px; border: 2px dashed rgba(26, 28, 35, 0.45); border-radius: 12px; background: rgba(255, 255, 255, 0.6); }
+.drop.is-over { background: #fff; border-color: var(--accent); border-style: solid; }
+.drop__title { font-weight: 700; }
+/* A finger cannot drag a file in. */
+@media (pointer: coarse) { .drop__or { display: none; } }
+.drop input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.drop:focus-within { outline: 3px solid #1a5fd0; outline-offset: 3px; }
+.chosen { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding: 10px 14px; border: 1px solid rgba(26, 28, 35, 0.35); border-radius: 12px; background: #fff; }
+.chosen__name { font-weight: 700; overflow-wrap: anywhere; flex: 1 1 12em; }
+.choices { display: flex; gap: 10px; }
+.choice { display: inline-flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 18px 0 14px; border: 1px solid rgba(26, 28, 35, 0.35); border-radius: 10px; background: #fff; cursor: pointer; }
+.choice input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+.consent { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; cursor: pointer; margin-top: 8px; }
+.consent input { width: 24px; height: 24px; margin: 2px 0 0; accent-color: var(--ink); cursor: pointer; }
+.send { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-top: 26px; }
+.form-errors { border: 2px solid var(--red); border-radius: 12px; padding: 16px 18px; margin-bottom: 26px; background: #fff; }
+.form-errors h3 { font-family: inherit; font-size: 1.05rem; font-weight: 700; line-height: 1.4; }
+.form-errors ul { margin-top: 6px; display: grid; gap: 4px; }
+/* The decoy field: people never see or reach it. */
+.hp { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.done h2 { margin-top: 0; }
+.done p { margin-top: 14px; max-width: 30em; }
+.done__ref { display: inline-block; margin-top: 16px; padding: 8px 16px; border-radius: 10px; background: var(--ink); color: #fff; font-family: var(--mono); font-size: 1.6rem; font-weight: 600; letter-spacing: 0.06em; }
+.done strong { overflow-wrap: anywhere; }
+/* On a phone, the way to the form stays within reach until the form is on screen. */
+.applybar { display: none; }
+
+/* ---------- text pages ---------- */
+.doc h1 { margin-top: 6px; font-size: clamp(1.7rem, 4.6vw, 2.5rem); }
+.doc__lead { margin-top: 16px; font-size: 1.12rem; }
+.doc__body { margin-top: clamp(20px, 3vw, 32px); }
+.doc__body h2 { font-size: 1.2rem; margin-top: 1.7em; }
+.doc__body p { margin-top: 0.8em; }
+
+.lost { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 34rem; margin: clamp(32px, 10vh, 96px) auto 0; padding: 2.5rem 2rem 2.2rem; }
+.lost img { width: min(240px, 60vw); margin-bottom: 1.2rem; }
+.lost p { margin-top: 0.8rem; color: var(--ink-dim); }
+.lost .badges { justify-content: center; margin-top: 1.6rem; }
+
+/* ---------- narrower screens: the main site ---------- */
+@media (max-width: 900px) {
+    .studio, .community { grid-template-columns: 1fr; }
+    .perks, .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+    .games { grid-template-columns: 1fr; }
+    .perks-panel__potato { display: none; }
+}
+@media (max-width: 640px) {
+    .top { padding-top: 8px; }
+    .top__bar { padding-left: 10px; }
+    .top__logo img { height: 34px; }
+    .row2 { grid-template-columns: 1fr; }
+    .role { grid-template-columns: 1fr; }
+    .role__go { grid-column: 1; grid-row: auto; }
+    .posting__actions [data-apply-jump] { display: none; }
+    .foot__in { flex-direction: column; align-items: flex-start; }
+    .applybar {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 20;
+        padding: 12px var(--gutter) max(12px, env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.92);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid var(--line);
+        transition: transform 0.18s ease, visibility 0.18s;
+    }
+    .applybar.is-away { transform: translateY(110%); visibility: hidden; }
+    .applybar .btn { width: 100%; }
+}
+@media (max-width: 560px) {
+    .perks { grid-template-columns: 1fr; }
+    .perk--wide { grid-column: auto; }
+}
+@media (max-width: 480px) {
+    .facts { grid-template-columns: 1fr 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .top ul { gap: 0; }
+    .top li:first-child { display: none; }
+    .team { gap: 8px; }
+    .person { gap: 10px; padding: 10px; }
+    .person__mark { width: 36px; height: 36px; }
+    /* A game's two store badges share a row, sized as on the landing card. */
+    .game__body .badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+    .game__body .badge { width: 100%; min-width: 0; height: 42px; padding: 0; gap: 0.4rem; }
+    .game__body .badge svg { width: 22px; height: 22px; }
+    .game__body .badge .small { font-size: 0.52rem; }
+    .game__body .badge .big { font-size: 0.95rem; }
+}
+/* The narrowest phones have no room for two to a row: a game's badges stack, as on the landing card, and the
+   team stands in one column, so no label or name wraps or runs out of its box. */
+@media (max-width: 370px) {
+    .game__body .badges { grid-template-columns: minmax(0, 10rem); }
+}
+@media (max-width: 360px) {
+    /* The narrowest phones keep Games beside Careers; Studio is already hidden above. */
+    .top li:nth-child(3) { display: none; }
+}
+@media (max-width: 350px) {
+    .team { grid-template-columns: 1fr; }
+}
+@media (max-height: 600px) and (min-aspect-ratio: 4 / 3) {
+    /* A landscape phone has no height to spare: the header scrolls away with the page. */
+    .top { position: static; padding-top: 6px; }
+    .top__bar { padding-block: 2px; }
+    .top__logo img { height: 28px; }
+    .top__bar a, .top .btn { min-height: 36px; }
+}
+
+/* ---------- narrower screens: the landing, sized as the live landing page ---------- */
+@media (max-width: 480px) {
+    .badge { height: 42px; }
+    .badge .big { font-size: 1rem; }
+}
+@media (max-aspect-ratio: 3 / 4) {
+    .landing { padding: clamp(1rem, 3.5vh, 2rem) 0 calc(var(--cell) * 4.4); }
+    .card {
+        width: min(84vw, 30rem);
+        padding: clamp(1.2rem, 3vh, 2rem) clamp(0.9rem, 4vw, 1.5rem) clamp(1rem, 2.5vh, 1.5rem);
+        border-radius: clamp(16px, 5vw, 22px);
+    }
+    .card .logo {
+        width: clamp(8.5rem, 44vw, 11.5rem);
+        margin-bottom: clamp(0.75rem, 2vh, 1.1rem);
+    }
+    .card h1 { font-size: clamp(1.3rem, 5.5vw, 1.65rem); }
+    .card__kicker { font-size: clamp(0.9rem, 3.8vw, 0.98rem); }
+    .tagline {
+        margin-bottom: clamp(0.9rem, 2.2vh, 1.2rem);
+        font-size: clamp(0.9rem, 3.8vw, 0.98rem);
+    }
+    .card .badges {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        /* Cap at two badge widths + gap so badges never stretch wider than designed. */
+        max-width: calc(20.5rem + 0.55rem);
+        gap: 0.55rem;
+    }
+    .card .badge {
+        width: 100%;
+        height: clamp(38px, 10.5vw, 44px);
+        gap: 0.4rem;
+    }
+    .card .badge svg { width: 22px; height: 22px; }
+    .card .badge .small { font-size: 0.52rem; }
+    .card .badge .big { font-size: 0.95rem; }
+    .enter {
+        width: 100%;
+        max-width: calc(20.5rem + 0.55rem);
+        height: clamp(42px, 11vw, 48px);
+        margin-top: 0.55rem;
+        font-size: clamp(0.98rem, 4.2vw, 1.08rem);
+    }
+    .hiring {
+        margin-top: clamp(0.9rem, 2.2vh, 1.2rem);
+        font-size: 0.84rem;
+    }
+    .landing-foot {
+        padding: 0 1rem max(1rem, env(safe-area-inset-bottom));
+        font-size: 0.8rem;
+    }
+}
+@media (max-width: 350px) and (max-aspect-ratio: 3 / 4) {
+    .card { width: 90vw; }
+    .card .badges {
+        grid-template-columns: minmax(0, 10rem);
+        justify-content: center;
+    }
+}
+@media (max-height: 600px) and (min-aspect-ratio: 4 / 3) {
+    .landing { padding: 0.75rem 1rem; }
+    .card { max-width: 34rem; padding: 0.8rem 1.5rem 0.75rem; }
+    .card .logo {
+        width: min(120px, 18vw);
+        margin-bottom: 0.5rem;
+    }
+    .card h1 { font-size: 1.25rem; }
+    .tagline {
+        margin-bottom: 0.6rem;
+        font-size: 0.85rem;
+    }
+    .card .badges { gap: 0.5rem; }
+    .card .badge {
+        width: 9.5rem;
+        height: 36px;
+        gap: 0.4rem;
+    }
+    .card .badge svg { width: 21px; height: 21px; }
+    .card .badge .small { font-size: 0.5rem; }
+    .card .badge .big { font-size: 0.9rem; }
+    .enter {
+        width: calc(19rem + 0.5rem);
+        height: 34px;
+        margin-top: 0.5rem;
+        font-size: 0.95rem;
+    }
+    .hiring {
+        margin-top: 0.6rem;
+        padding: 0.2rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    .landing-foot {
+        padding-bottom: 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .veil, .applybar, .btn, .enter, .enter span { transition: none; }
+    .enter:hover span { transform: none; }
+}
