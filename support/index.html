@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src https://team.tier9studios.com http://localhost:* http://127.0.0.1:*; form-action 'none'; base-uri 'none'"/>
+    <title>Support &mdash; Tier 9 Game Studios</title>
+    <meta name="description" content="Contact Tier 9 Game Studios support about 9999+ Weapons: Idle RPG or Auto Battles Online: purchases, bugs, accounts, data deletion and feedback."/>
+    <meta property="og:title" content="Support &mdash; Tier 9 Game Studios"/>
+    <meta property="og:description" content="Get help with 9999+ Weapons: Idle RPG or Auto Battles Online. Send us a message and we reply by email."/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="https://www.tier9studios.com/support/"/>
+    <meta property="og:image" content="https://www.tier9studios.com/assets/bg.jpg"/>
+    <meta name="theme-color" content="#f6f7f9"/>
+    <meta name="t9-api" content="https://team.tier9studios.com"/>
+    <link rel="icon" type="image/png" href="/assets/logo.png"/>
+    <style>
+        :root {
+            --bg: #f6f7f9;
+            --panel: #ffffff;
+            --panel-2: #eef0f3;
+            --border: #e6e7eb;
+            --field-border: #d3d6dd;
+            --ink: #1a1c23;
+            --ink-dim: #6f7380;
+            --accent: #e8434f;
+            --accent-deep: #c9333f;
+            --accent-soft: rgba(232, 67, 79, 0.16);
+            --error: #b42332;
+            --blurple: #5865f2;
+            --ok: #1f8a4c;
+        }
+        @font-face {
+            font-family: "Ioskeley Mono";
+            src: url("/assets/fonts/IoskeleyMonoTerm-Regular.woff2") format("woff2");
+            font-weight: 400;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: "Ioskeley Mono";
+            src: url("/assets/fonts/IoskeleyMonoTerm-SemiBold.woff2") format("woff2");
+            font-weight: 600;
+            font-display: swap;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrap {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2.25em 1.25em 1em;
+        }
+        .studio {
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-size: 0.85em;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin: 0 0 1.5em;
+        }
+        .studio a {
+            color: var(--ink-dim);
+            text-decoration: none;
+        }
+        .studio a:hover { color: var(--accent-deep); }
+        h1 {
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-weight: 600;
+            font-size: 1.8em;
+            line-height: 1.2;
+            margin: 0 0 0.3em;
+        }
+        .subtitle {
+            color: var(--ink-dim);
+            margin: 0 0 1.5em;
+            max-width: 36em;
+        }
+        a { color: var(--accent-deep); }
+
+        /* Quick paths */
+        .paths {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75em;
+            margin: 0 0 1.5em;
+            padding: 0;
+            list-style: none;
+        }
+        .path {
+            display: flex;
+            align-items: center;
+            gap: 0.85em;
+            height: 100%;
+            padding: 0.9em 1em;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--ink);
+            text-decoration: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .path:hover {
+            border-color: var(--field-border);
+            box-shadow: 0 2px 12px rgba(26, 28, 35, 0.07);
+        }
+        .path:focus-visible {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .path .icon {
+            flex: none;
+            display: grid;
+            place-items: center;
+            width: 2.4em;
+            height: 2.4em;
+            border-radius: 10px;
+            background: var(--panel-2);
+            color: var(--accent-deep);
+        }
+        .path .icon svg { width: 1.25em; height: 1.25em; fill: currentColor; }
+        .path-discord .icon { background: rgba(88, 101, 242, 0.12); color: var(--blurple); }
+        .path .text { display: flex; flex-direction: column; min-width: 0; }
+        .path strong {
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-weight: 600;
+            font-size: 0.92em;
+        }
+        .path .text span { color: var(--ink-dim); font-size: 0.88em; line-height: 1.35; }
+        .path .arrow { margin-left: auto; color: var(--ink-dim); flex: none; }
+
+        /* Panel */
+        article {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.25em 2.5em 2em;
+            box-shadow: 0 2px 12px rgba(26, 28, 35, 0.06);
+        }
+        .panel-title {
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin: 0 0 1.25em;
+            padding-bottom: 0.6em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Form */
+        .row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 1em;
+        }
+        .field { margin: 0 0 1.2em; min-width: 0; }
+        .row.names .field { margin-bottom: 0.35em; }
+        .row.names + .hint { margin: 0 0 1.2em; }
+        label {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5em;
+            font-weight: 600;
+            font-size: 0.92em;
+            margin: 0 0 0.4em;
+        }
+        .opt {
+            font-weight: 400;
+            font-size: 0.88em;
+            color: var(--ink-dim);
+        }
+        input[type="text"],
+        input[type="email"],
+        select,
+        textarea {
+            display: block;
+            width: 100%;
+            margin: 0;
+            padding: 0.68em 0.85em;
+            font: inherit;
+            font-size: 1rem;
+            color: var(--ink);
+            background: var(--panel);
+            border: 1px solid var(--field-border);
+            border-radius: 10px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        select {
+            -webkit-appearance: none;
+            appearance: none;
+            padding-right: 2.4em;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236f7380' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.9em center;
+            background-size: 0.75em auto;
+            text-overflow: ellipsis;
+        }
+        select:invalid { color: var(--ink-dim); }
+        select option { color: var(--ink); }
+        textarea {
+            min-height: 10em;
+            resize: vertical;
+            line-height: 1.55;
+        }
+        input:hover, select:hover, textarea:hover { border-color: #b9bdc6; }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        [aria-invalid="true"] { border-color: var(--error) !important; }
+        [aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgba(180, 35, 50, 0.16); }
+        .hint {
+            margin: 0.4em 0 0;
+            font-size: 0.85em;
+            color: var(--ink-dim);
+        }
+        .error {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.4em;
+            margin: 0.4em 0 0;
+            font-size: 0.86em;
+            font-weight: 500;
+            color: var(--error);
+        }
+        .error::before {
+            content: "!";
+            flex: none;
+            display: inline-grid;
+            place-items: center;
+            width: 1.2em;
+            height: 1.2em;
+            margin-top: 0.1em;
+            border-radius: 50%;
+            background: var(--error);
+            color: #fff;
+            font-size: 0.8em;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .error[hidden], [hidden] { display: none !important; }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1em;
+        }
+        .count {
+            flex: none;
+            margin: 0.4em 0 0;
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-size: 0.8em;
+            color: var(--ink-dim);
+            font-variant-numeric: tabular-nums;
+        }
+        .count.near { color: var(--accent-deep); }
+        .trap {
+            position: absolute;
+            left: -10000px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Failure notice */
+        .notice {
+            margin: 0.25em 0 1.25em;
+            padding: 0.9em 1em;
+            border-radius: 10px;
+            border: 1px solid rgba(180, 35, 50, 0.25);
+            background: #fdf1f2;
+            color: #5d1720;
+            font-size: 0.93em;
+        }
+        .notice p { margin: 0; }
+        .notice p + p { margin-top: 0.4em; }
+        .notice a { color: var(--error); font-weight: 600; }
+
+        /* Submit */
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            margin-top: 0.4em;
+        }
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6em;
+            min-height: 48px;
+            padding: 0.7em 1.6em;
+            border: 0;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .button:hover { background: var(--accent-deep); }
+        .button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--accent);
+        }
+        .button[disabled] { cursor: progress; background: var(--accent-deep); opacity: 0.85; }
+        .button.secondary {
+            background: var(--panel);
+            color: var(--ink);
+            border: 1px solid var(--field-border);
+        }
+        .button.secondary:hover { border-color: var(--accent); color: var(--accent-deep); background: var(--panel); }
+        .spinner {
+            width: 1em;
+            height: 1em;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .privacy-note {
+            margin: 1.1em 0 0;
+            font-size: 0.85em;
+            color: var(--ink-dim);
+        }
+
+        /* Confirmation */
+        .done { text-align: center; padding: 1em 0 0.5em; }
+        .done .badge {
+            display: grid;
+            place-items: center;
+            width: 3.5em;
+            height: 3.5em;
+            margin: 0 auto 1.1em;
+            border-radius: 50%;
+            background: rgba(31, 138, 76, 0.12);
+            color: var(--ok);
+        }
+        .done .badge svg { width: 1.7em; height: 1.7em; }
+        .done h2 {
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-weight: 600;
+            font-size: 1.4em;
+            margin: 0 0 0.5em;
+        }
+        .done h2:focus { outline: none; }
+        .done p { margin: 0 auto 0.75em; max-width: 30em; color: var(--ink-dim); }
+        .done strong { color: var(--ink); word-break: break-all; }
+        .ref {
+            display: inline-block;
+            margin: 0.35em 0 1.1em;
+            padding: 0.55em 1.1em;
+            border: 1px dashed var(--field-border);
+            border-radius: 10px;
+            background: var(--panel-2);
+            font-family: "Ioskeley Mono", ui-monospace, monospace;
+            font-weight: 600;
+            font-size: 1.35em;
+            letter-spacing: 0.08em;
+            color: var(--ink);
+        }
+        .done .button { margin-top: 0.75em; }
+
+        footer {
+            text-align: center;
+            padding: 1.5em;
+            font-size: 0.85em;
+            color: var(--ink-dim);
+        }
+        footer a { color: var(--ink-dim); }
+
+        @media (max-width: 640px) {
+            .wrap { padding: 1.25em 1em 0.5em; }
+            .paths { grid-template-columns: minmax(0, 1fr); }
+            article { padding: 1.5em 1.15em 1.4em; border-radius: 12px; }
+            .row { grid-template-columns: minmax(0, 1fr); }
+            .row.names .field:first-child { margin-bottom: 1.2em; }
+            .actions .button { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; }
+            .spinner { animation-duration: 2.4s; }
+        }
+    </style>
+    <script src="/assets/site/support.js" defer></script>
+</head>
+<body>
+    <div class="wrap">
+        <p class="studio"><a href="/">&larr; Tier 9 Game Studios</a></p>
+        <h1>Support</h1>
+        <p class="subtitle">Questions about a purchase, a bug, or your account? Tell us below and we&rsquo;ll reply by email.</p>
+
+        <ul class="paths">
+            <li>
+                <a class="path" href="/privacy/#data-deletion">
+                    <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></span>
+                    <span class="text"><strong>Delete your account</strong><span>Steps in the game&rsquo;s Settings</span></span>
+                    <span class="arrow" aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+            <li>
+                <a class="path path-discord" href="https://discord.gg/pKbKFXm2xz">
+                    <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.38-.44.87-.6 1.25a18.3 18.3 0 0 0-5.49 0 12.6 12.6 0 0 0-.61-1.25.08.08 0 0 0-.08-.04 19.7 19.7 0 0 0-4.88 1.52.07.07 0 0 0-.04.03C.53 9.05-.32 13.58.1 18.06c0 .02.01.04.03.05a19.9 19.9 0 0 0 5.99 3.03.08.08 0 0 0 .09-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1-.01-.12c.13-.1.25-.19.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01c.12.1.25.2.37.29a.08.08 0 0 1-.01.13c-.6.35-1.22.64-1.87.89a.08.08 0 0 0-.04.11c.36.7.78 1.37 1.23 2a.08.08 0 0 0 .08.03 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.67-3.55-13.66a.06.06 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.95 2.42-2.16 2.42z"/></svg></span>
+                    <span class="text"><strong>Ask the community</strong><span>Players and the team on Discord</span></span>
+                    <span class="arrow" aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+
+        <article>
+            <div id="request">
+                <h2 class="panel-title">Send a support request</h2>
+                <noscript>
+                    <div class="notice"><p>This form needs JavaScript. You can also email us at <a href="mailto:autobattlesonline@gmail.com">autobattlesonline@gmail.com</a>.</p></div>
+                </noscript>
+                <form id="support-form" novalidate>
+                    <div class="row">
+                        <div class="field">
+                            <label for="f-game">Game</label>
+                            <select id="f-game" name="game" required>
+                                <option value="abw" selected>9999+ Weapons: Idle RPG</option>
+                                <option value="abo">Auto Battles Online</option>
+                            </select>
+                            <p class="error" id="f-game-error" hidden></p>
+                        </div>
+                        <div class="field">
+                            <label for="f-platform">Platform</label>
+                            <select id="f-platform" name="platform" required>
+                                <option value="" disabled selected>Choose a platform</option>
+                                <option value="android">Android (Google Play)</option>
+                                <option value="ios">iPhone or iPad (App Store)</option>
+                                <option value="steam">Windows (Steam)</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <p class="error" id="f-platform-error" hidden></p>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="f-topic">Topic</label>
+                        <select id="f-topic" name="topic" required>
+                            <option value="" disabled selected>Choose a topic</option>
+                            <option value="purchase">Purchase or billing</option>
+                            <option value="bug">Bug or technical problem</option>
+                            <option value="account">Account, login or lost progress</option>
+                            <option value="deletion">Delete my account or data</option>
+                            <option value="feedback">Feedback or suggestion</option>
+                            <option value="other">Something else</option>
+                        </select>
+                        <p class="error" id="f-topic-error" hidden></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="f-email">Email</label>
+                        <input type="email" id="f-email" name="email" required maxlength="254" autocomplete="email" inputmode="email" spellcheck="false" aria-describedby="f-email-hint"/>
+                        <p class="hint" id="f-email-hint">We reply to this address</p>
+                        <p class="error" id="f-email-error" hidden></p>
+                    </div>
+
+                    <div class="row names">
+                        <div class="field">
+                            <label for="f-player">In-game name <span class="opt">Optional</span></label>
+                            <input type="text" id="f-player" name="playerName" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="f-names-hint"/>
+                            <p class="error" id="f-player-error" hidden></p>
+                        </div>
+                        <div class="field">
+                            <label for="f-server">Server <span class="opt">Optional</span></label>
+                            <input type="text" id="f-server" name="server" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="f-names-hint"/>
+                            <p class="error" id="f-server-error" hidden></p>
+                        </div>
+                    </div>
+                    <p class="hint" id="f-names-hint">Both are shown in the game&rsquo;s Settings</p>
+
+                    <div class="field" id="wrap-order" hidden>
+                        <label for="f-order">Order or transaction ID <span class="opt">Optional</span></label>
+                        <input type="text" id="f-order" name="orderId" maxlength="120" autocomplete="off" spellcheck="false" aria-describedby="f-order-hint"/>
+                        <p class="hint" id="f-order-hint">From your store receipt email or purchase history</p>
+                        <p class="error" id="f-order-error" hidden></p>
+                    </div>
+
+                    <div class="field" id="wrap-device" hidden>
+                        <label for="f-device">Device and operating system <span class="opt">Optional</span></label>
+                        <input type="text" id="f-device" name="device" maxlength="120" autocomplete="off" aria-describedby="f-device-hint"/>
+                        <p class="hint" id="f-device-hint">For example: Pixel 8, Android 15</p>
+                        <p class="error" id="f-device-error" hidden></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="f-message">Message</label>
+                        <textarea id="f-message" name="message" required minlength="10" maxlength="5000" rows="7" aria-describedby="f-message-hint f-message-count"></textarea>
+                        <div class="meta-row">
+                            <p class="hint" id="f-message-hint">What happened, and what did you expect? At least 10 characters.</p>
+                            <p class="count" id="f-message-count"><span id="f-message-used">0</span> / 5,000<span class="sr-only"> characters</span></p>
+                        </div>
+                        <p class="error" id="f-message-error" hidden></p>
+                    </div>
+
+                    <div class="trap" aria-hidden="true">
+                        <label for="f-website">Website</label>
+                        <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off"/>
+                    </div>
+
+                    <div class="notice" id="form-notice" role="alert" hidden></div>
+
+                    <div class="actions">
+                        <button class="button" type="submit" id="f-submit">
+                            <span class="spinner" aria-hidden="true" hidden></span>
+                            <span class="label">Send request</span>
+                        </button>
+                    </div>
+                    <p class="privacy-note">We use these details only to answer your request. See our <a href="/privacy/">Privacy Policy</a>.</p>
+                </form>
+            </div>
+
+            <div id="sent" class="done" hidden>
+                <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                <h2 id="sent-title" tabindex="-1">Request sent</h2>
+                <p>Your reference code is</p>
+                <div class="ref" id="sent-ref"></div>
+                <p>We&rsquo;ll reply to <strong id="sent-email"></strong>. Mention the reference code if you write to us again.</p>
+                <button class="button secondary" type="button" id="send-another">Send another request</button>
+            </div>
+        </article>
+        <div class="sr-only" id="announce" role="status" aria-live="polite"></div>
+    </div>
+    <footer>
+        <p>&copy; Tier 9 Game Studios Ltd. &bull; <a href="/">Home</a> &bull; <a href="/privacy/">Privacy</a> &bull; <a href="/terms/">Terms</a></p>
+    </footer>
+</body>
+</html>
