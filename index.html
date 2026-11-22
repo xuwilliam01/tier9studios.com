@@ -223,6 +223,15 @@
         }
         /* A second pill sits close under the first. */
         .hiring + .hiring { margin-top: 0.6rem; }
+        /* The last two pills share a row, so the card stays short; on a narrow phone they wrap to two rows. */
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-top: 0.6rem;
+        }
+        .pill-row .hiring { margin-top: 0; }
         footer {
             padding: 0 1.5rem 1.5rem;
             display: flex;
@@ -355,7 +364,10 @@
                 </a>
             </div>
             <a class="hiring" href="/auto-battles-online/">Also from us: Auto Battles Online &rarr;</a>
-            <a class="hiring" href="https://tier-9-game-studios-ltd.breezy.hr/">We&rsquo;re hiring!</a>
+            <div class="pill-row">
+                <a class="hiring" href="/support/">Contact Support</a>
+                <a class="hiring" href="https://tier-9-game-studios-ltd.breezy.hr/">We&rsquo;re hiring!</a>
+            </div>
         </div>
     </main>
     <footer>
