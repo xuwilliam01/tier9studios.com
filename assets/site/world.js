@@ -1,15 +1,24 @@
 // A live World 1 biome behind the page, the same scene /abw/ draws with its own inline copy of this script.
 // /assets/abw/biomes.json lists five biomes, each with its battle background layers, floor, props and monsters,
-// all cut from the game. Every load and every 30 s shows the next biome from a shuffled bag kept in localStorage,
+// all cut from the game. By default every load and every 30 s shows the next biome from a shuffled bag in localStorage,
 // so no biome repeats until all five have been shown. Each page has a .veil element that site.css blurs to put the
 // scene out of focus behind the main site; scenes go in just before it, so the veil always covers them.
 (function () {
+    // The scene's settings from the site editor. tools/apply-site-settings.mjs rewrites this one line.
+    // mode: "auto" follows the visitor's reduced-motion preference, "still" always holds still. biome: "random",
+    // or a biome id to show that one only. rotateBiomes and intervalSeconds: change the random biome on a timer.
+    var MOTION = {"mode":"auto","biome":"random","rotateBiomes":true,"intervalSeconds":30};
     var BAG_KEY = "t9.abw.biomeBag", LAST_KEY = "t9.abw.lastBiome";
-    var ROTATE_MS = 30000, FADE_MS = 1200;
+    var FADE_MS = 1200;
     var biomes = [], current = null, lastWidth = window.innerWidth;
     // A visitor who has asked their system for reduced motion gets one still scene: nothing walks, drifts or
-    // loops, and the biome does not change while the page stays open.
-    var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // loops, and the biome does not change while the page stays open. On this machine's own preview server,
+    // ?motion=play shows the motion anyway, for a developer whose system asks for reduced motion.
+    var previewPlay = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
+        && new URLSearchParams(window.location.search).get("motion") === "play";
+    var still = MOTION.mode === "still" || (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !previewPlay);
+    if (MOTION.mode === "still") document.documentElement.dataset.siteMotion = "still";
+    else if (previewPlay && !still) document.documentElement.dataset.scenePreview = "play";
 
     function rand(a, b) { return a + Math.random() * (b - a); }
     function div(cls, parent) {
@@ -255,8 +264,11 @@
         });
     }
 
-    function rotate() {
-        show(nextBiome()).then(function () { if (!still) setTimeout(rotate, ROTATE_MS); });
+    var rotateBiomes = false;
+    function rotate(biome) {
+        show(biome).then(function () {
+            if (rotateBiomes) setTimeout(function () { rotate(nextBiome()); }, MOTION.intervalSeconds * 1000);
+        });
     }
 
     var last = 0;
@@ -284,7 +296,9 @@
         .then(function (r) { return r.json(); })
         .then(function (list) {
             biomes = list;
-            rotate();
+            var pinned = biomes.find(function (b) { return b.id === MOTION.biome; });
+            rotateBiomes = !still && !pinned && MOTION.rotateBiomes;
+            rotate(pinned || nextBiome());
             if (!still) requestAnimationFrame(tick);
         });
 })();

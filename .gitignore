@@ -1,0 +1,3 @@
+# Every committed file is published. The site editor's export is applied with tools/apply-site-settings.mjs, not committed.
+site-settings.json
+__pycache__/
