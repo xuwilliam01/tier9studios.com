@@ -27,7 +27,7 @@
     --red-strong: #cf3340;
     --enter: #486783;
     --enter-hover: #3c5872;
-    --site-blur: 1px;
+    --site-blur: 2px;
     --line: rgba(26, 28, 35, 0.14);
     --glass: rgba(255, 255, 255, 0.66);
     --glass-strong: rgba(255, 255, 255, 0.84);
@@ -775,7 +775,7 @@ h3 { font-size: clamp(1.1rem, 1.8vw, 1.3rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    html:not([data-scene-preview="play"]) .scene, .veil, .applybar, .btn, .enter, .enter > [aria-hidden] { transition: none; }
+    html:not([data-scene-motion="play"]) .scene, .veil, .applybar, .btn, .enter, .enter > [aria-hidden] { transition: none; }
     .enter:hover > [aria-hidden] { transform: none; }
 }
 

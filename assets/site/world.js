@@ -5,20 +5,23 @@
 // scene out of focus behind the main site; scenes go in just before it, so the veil always covers them.
 (function () {
     // The scene's settings from the site editor. tools/apply-site-settings.mjs rewrites this one line.
-    // mode: "auto" follows the visitor's reduced-motion preference, "still" always holds still. biome: "random",
-    // or a biome id to show that one only. rotateBiomes and intervalSeconds: change the random biome on a timer.
-    var MOTION = {"mode":"auto","biome":"random","rotateBiomes":true,"intervalSeconds":30};
+    // mode: "play" moves for every visitor; "auto" holds still for a visitor whose system asks for reduced motion;
+    // "still" always holds still. biome: "random", or a biome id to show that one only. rotateBiomes and
+    // intervalSeconds: change the random biome on a timer.
+    var MOTION = {"mode":"play","biome":"random","rotateBiomes":true,"intervalSeconds":30};
     var BAG_KEY = "t9.abw.biomeBag", LAST_KEY = "t9.abw.lastBiome";
     var FADE_MS = 1200;
     var biomes = [], current = null, lastWidth = window.innerWidth;
-    // A visitor who has asked their system for reduced motion gets one still scene: nothing walks, drifts or
-    // loops, and the biome does not change while the page stays open. On this machine's own preview server,
-    // ?motion=play shows the motion anyway, for a developer whose system asks for reduced motion.
+    // A still scene has nothing walking, drifting or looping, and its biome does not change while the page stays
+    // open. In "auto" mode, ?motion=play on this machine's own preview server shows the motion anyway, for a
+    // developer whose system asks for reduced motion.
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var previewPlay = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
         && new URLSearchParams(window.location.search).get("motion") === "play";
-    var still = MOTION.mode === "still" || (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !previewPlay);
+    var still = MOTION.mode === "still" || (MOTION.mode === "auto" && reduce && !previewPlay);
     if (MOTION.mode === "still") document.documentElement.dataset.siteMotion = "still";
-    else if (previewPlay && !still) document.documentElement.dataset.scenePreview = "play";
+    // site.css turns transitions off for reduced motion; this keeps the scene's cross-fade when it moves anyway.
+    else if (reduce && !still) document.documentElement.dataset.sceneMotion = "play";
 
     function rand(a, b) { return a + Math.random() * (b - a); }
     function div(cls, parent) {

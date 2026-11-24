@@ -38,8 +38,9 @@ The home page, `/abw/`, the careers pages and `404.html` draw a live World 1 bio
 background, floor, props and monsters, all cut from the game and listed in `assets/abw/biomes.json`.
 `assets/site/world.js` builds it. `/abw/` draws the same kind of scene with its own inline script and page defaults.
 All monsters walk one line through the middle of the path, and the front props stand at the path's top edge,
-behind them. For a visitor whose system asks for reduced motion, the scene holds still and the biome does not
-change. Panels are frosted glass; headings use Ioskeley Mono, body text the system font.
+behind them. The scene moves for every visitor, including one whose system asks for reduced motion; the
+editor's Motion setting can instead hold it still for those visitors, or for everyone. `/abw/` always moves.
+Panels are frosted glass; headings use Ioskeley Mono, body text the system font.
 
 The home page has two states, and the address alone picks between them, so they work without JavaScript and
 with the back button:
@@ -94,9 +95,9 @@ What the editor and the script reach:
 - Text: every element with a `data-site-copy` attribute. One key changes every page that carries it, and
   such an element holds text only, no markup.
 - Colours: `--ink`, `--ink-dim`, `--accent`, `--enter`, `--enter-hover` and `--blurple` in `site.css`.
-- Motion: the `MOTION` line at the top of `world.js` (still or not, one biome or random, rotation and its
-  interval) and `--site-blur` in `site.css`. A visitor's reduced-motion preference still holds the scene
-  still.
+- Motion: the `MOTION` line at the top of `world.js` (always move, follow the visitor's reduced-motion
+  preference, or always still; one biome or random; rotation and its interval) and `--site-blur` in
+  `site.css`.
 - The team: the whole `<ul class="team">` list on the home page, and its photos in `assets/img/team/`.
 
 ## Preview locally
@@ -106,9 +107,9 @@ node tools/dev-server.mjs
 ```
 
 serves the site at http://127.0.0.1:8080/ the way GitHub Pages does (folder indexes, and `404.html` for a
-missing address). If your computer asks for reduced motion, open http://127.0.0.1:8080/?motion=play to
-see the background move. That switch works only on this machine's own addresses, and not when `world.js`
-sets the scene still.
+missing address). If `world.js` follows the reduced-motion preference and your computer asks for it, open
+http://127.0.0.1:8080/?motion=play to see the background move. That switch works only on this machine's own
+addresses.
 
 To try the careers pages against a team site running on your machine:
 
