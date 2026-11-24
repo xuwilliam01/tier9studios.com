@@ -3,6 +3,8 @@
 The Tier 9 Game Studios website, served by GitHub Pages at https://www.tier9studios.com/.
 
 Pages builds from the `deployment` branch. There is no build step: every file in the repository is published as it is.
+`main` and `deployment` hold the same files: a change lands on `main` first, and the same commits are then
+cherry-picked onto `deployment` to publish them.
 
 ## What is here
 
@@ -16,6 +18,7 @@ Pages builds from the `deployment` branch. There is no build step: every file in
 | `/abw/app/apple/`, `/abw/app/steam/` | Where Sign in with Apple and Sign in with Steam return to the game. |
 | `/auto-battles-online/` | The page for Auto Battles Online. |
 | `/abo/` | Sends a visitor to the Auto Battles Online store page for their device. |
+| `/support/` | The support page. Its form sends a player's request to the team site's public support route (`https://team.tier9studios.com/api/public/support`). |
 | `/privacy/`, `/terms/` | The privacy policy for the games, and the terms for the Discord community. |
 
 ### Files other systems depend on
@@ -33,7 +36,7 @@ Do not move, rename or reformat these without checking what reads them.
 
 The home page, `/abw/`, the careers pages and `404.html` draw a live World 1 biome from 9999+ Weapons behind them: the battle
 background, floor, props and monsters, all cut from the game and listed in `assets/abw/biomes.json`.
-`assets/site/world.js` builds it; `/abw/` has its own inline copy of the same script, so change both together.
+`assets/site/world.js` builds it. `/abw/` draws the same kind of scene with its own inline script and page defaults.
 All monsters walk one line through the middle of the path, and the front props stand at the path's top edge,
 behind them. For a visitor whose system asks for reduced motion, the scene holds still and the biome does not
 change. Panels are frosted glass; headings use Ioskeley Mono, body text the system font.
@@ -69,6 +72,33 @@ are managed in the team site's Hiring tab, and its `docs/HIRING.md` describes th
   answers. If that setting is changed for good, change the text of both pages as well, so a reader
   without JavaScript sees the right period.
 
+## The site editor
+
+The site editor is a page on the team site:
+[Tier 9 website editor](https://team.tier9studios.com/plans/WIL/tier9-site-editor). It edits the text,
+the colours, the team (names, roles, order and photos) and the background's motion, with a live preview,
+and every change autosaves as a shared draft on the team site. The website does not read that draft. To
+publish it:
+
+1. In the editor, choose **Export JSON** to save `site-settings.json`.
+2. Run `node tools/apply-site-settings.mjs site-settings.json`. It writes the draft into the pages, the
+   stylesheet, `world.js` and `assets/img/team/`, and stops without writing anything if a value is wrong.
+   The script's header lists what it changes.
+3. Preview, commit and publish as for any other change. Keep the settings file out of the repository:
+   every file here is published.
+4. Rebuild the editor with `python tools/site-editor/build.py` and republish it to the plan, so its
+   defaults match the site again. The build reads its defaults from the files the script wrote.
+
+What the editor and the script reach:
+
+- Text: every element with a `data-site-copy` attribute. One key changes every page that carries it, and
+  such an element holds text only, no markup.
+- Colours: `--ink`, `--ink-dim`, `--accent`, `--enter`, `--enter-hover` and `--blurple` in `site.css`.
+- Motion: the `MOTION` line at the top of `world.js` (still or not, one biome or random, rotation and its
+  interval) and `--site-blur` in `site.css`. A visitor's reduced-motion preference still holds the scene
+  still.
+- The team: the whole `<ul class="team">` list on the home page, and its photos in `assets/img/team/`.
+
 ## Preview locally
 
 ```
@@ -76,14 +106,18 @@ node tools/dev-server.mjs
 ```
 
 serves the site at http://127.0.0.1:8080/ the way GitHub Pages does (folder indexes, and `404.html` for a
-missing address). To try the careers pages against a team site running on your machine:
+missing address). If your computer asks for reduced motion, open http://127.0.0.1:8080/?motion=play to
+see the background move. That switch works only on this machine's own addresses, and not when `world.js`
+sets the scene still.
+
+To try the careers pages against a team site running on your machine:
 
 ```
 node tools/dev-server.mjs --api http://127.0.0.1:8787
 ```
 
 With `--api`, the server rewrites the API address in the HTML it serves. The files on disk are not
-changed, and the shipped JavaScript has no localhost switch.
+changed, and the shipped careers code uses the API address in the page.
 
 ## Rules for changes
 
@@ -101,5 +135,6 @@ changed, and the shipped JavaScript has no localhost switch.
 - `assets/abw/`: backgrounds, props and monsters cut from the game, and `biomes.json`, which describes
   each biome's layers, floor, walkable band, props and monsters.
 - `assets/img/`: the key art and world map, the potato and the mole, and the touch icon.
+- `assets/img/team/`: one 256 × 256 photo per person on the team list, named by the person's id.
 - `assets/bg.jpg`, `bg-arena.jpg` and `bg-dungeon.jpg`: the backgrounds of the Auto Battles Online page, and
   the image that link previews show.

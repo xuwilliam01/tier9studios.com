@@ -1,0 +1,74 @@
+<main>
+  <header class="bar">
+    <input type="checkbox" id="mode" aria-label="Toggle editor color theme">
+    <label class="modebtn" for="mode" title="Toggle editor color theme"><span class="moon" aria-hidden="true">&#9790;</span><span class="sun" aria-hidden="true">&#9728;</span></label>
+    <p class="eyebrow">Studio website · November 2026 · Editor</p>
+    <h1>Tier 9 website editor</h1>
+    <p class="meta">Created 2026-11-22 · Last Modified 2026-11-24 · <span class="loz">Complete</span></p>
+    <p class="sub">Edit the website’s copy, colors, team, and background motion in a shared draft.</p>
+  </header>
+  <section class="site-editor studio-panel" aria-label="Website editor">
+    <header class="savebar">
+      <div class="save-state" role="status" aria-live="polite">
+        <span class="state-loz" id="save-status">Connecting</span><span id="save-detail">Loading the shared draft</span>
+      </div>
+      <div class="actions">
+        <button type="button" id="retry" hidden>Retry save</button>
+        <button type="button" id="reload" disabled>Sync draft</button>
+        <button type="button" id="undo" disabled>Undo</button>
+        <button type="button" id="redo" disabled>Redo</button>
+        <button type="button" class="primary" id="export" disabled>Export JSON</button>
+      </div>
+    </header>
+    <p id="editor-warning" class="warning" role="status" hidden></p>
+    <div class="workbench">
+      <div class="control-side">
+        <div class="control-head">
+          <h2 class="mini-title">Settings</h2>
+          <select id="group" aria-label="Settings group" disabled></select>
+        </div>
+        <div class="fields" id="fields"><p class="field-help">Loading editor controls…</p></div>
+      </div>
+      <div class="preview-side">
+        <div class="preview-head">
+          <h2 class="mini-title">Preview</h2>
+          <div class="preview-nav">
+            <select aria-label="Preview section" id="preview-page">
+              <option value="landing">Landing</option>
+              <option value="studio">Studio</option>
+              <option value="games">Games</option>
+              <option value="community">Community</option>
+              <option value="team">The team</option>
+              <option value="work">Working here</option>
+              <option value="careers">Home careers</option>
+              <option value="careers-page">Careers page</option>
+            </select>
+            <button type="button" id="phone" aria-pressed="false">Phone</button>
+            <button type="button" id="compare" aria-pressed="false">View defaults</button>
+          </div>
+        </div>
+        <div class="preview-stage" id="preview-stage">
+          <iframe id="preview" title="Website preview" sandbox="allow-scripts"></iframe>
+        </div>
+      </div>
+    </div>
+    <footer class="help">
+      <span>To publish the draft, export <code>site-settings.json</code> and run <code>node tools/apply-site-settings.mjs site-settings.json</code> in the website repository, then commit and push.</span>
+      <div class="actions">
+        <button type="button" id="import" disabled>Import JSON</button>
+        <button type="button" id="reset" disabled>Reset draft</button>
+      </div>
+      <small>Preview uses a compact sample of each biome and an example careers state.</small>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </footer>
+    <noscript><p>Open this tool on the team site with scripts enabled to edit the shared draft.</p></noscript>
+    <dialog id="reset-dialog" aria-labelledby="reset-title">
+      <h2 id="reset-title">Reset the draft?</h2>
+      <p>This restores the website defaults in the draft. You can undo the reset during this session.</p>
+      <div class="actions">
+        <button type="button" id="cancel-reset" autofocus>Cancel</button>
+        <button type="button" id="confirm-reset" class="primary">Reset draft</button>
+      </div>
+    </dialog>
+  </section>
+</main>

@@ -29,10 +29,10 @@
     <a class="top__logo" href="/"><img src="/assets/logo.png" width="900" height="648" alt="Tier 9 Game Studios, home"></a>
     <nav aria-label="Main">
       <ul>
-        <li><a href="/#studio">Studio</a></li>
-        <li><a href="/#games">Games</a></li>
-        <li><a href="/#community">Community</a></li>
-        <li><a class="btn" href="/careers/" aria-current="page">Careers</a></li>
+        <li><a href="/#studio" data-site-copy="nav.studio">About</a></li>
+        <li><a href="/#games" data-site-copy="nav.games">Games</a></li>
+        <li><a href="/#community" data-site-copy="nav.community">Community</a></li>
+        <li><a class="btn" href="/careers/" aria-current="page" data-site-copy="nav.careers">Careers</a></li>
       </ul>
     </nav>
   </div>
@@ -41,13 +41,13 @@
 <main class="wrap page">
 
 <div class="panel glass glass--strong page-head">
-  <span class="kicker">Careers</span>
-  <h1>Make games with us</h1>
-  <p>We&rsquo;re ten people making idle RPGs, working together on-site in downtown Toronto. <a class="link" href="/#work">What it&rsquo;s like here</a></p>
+  <span class="kicker" data-site-copy="careers.kicker">Careers</span>
+  <h1 data-site-copy="careers.title">Make games with us</h1>
+  <p><span data-site-copy="careers.description">We&rsquo;re a team of ten making idle RPGs together in our downtown Toronto office.</span> <a class="link" href="/#work" data-site-copy="careers.workLink">See what it&rsquo;s like here</a></p>
 </div>
 
 <section id="roles" class="panel glass glass--strong" aria-labelledby="roles-title" data-roles tabindex="-1">
-  <div class="panel__head"><h2 id="roles-title">Open roles</h2></div>
+  <div class="panel__head"><h2 id="roles-title" data-site-copy="careers.rolesTitle">Open roles</h2></div>
   <p class="state" data-roles-paused hidden>Applications are paused for now. Please check back soon.</p>
   <div class="state" data-roles-loading hidden><span class="skel skel--big"></span><span class="skel"></span></div>
   <ul class="roles" data-roles-list hidden></ul>
@@ -59,16 +59,16 @@
     <button class="btn" type="button" data-roles-retry>Try again</button>
   </div>
   <noscript><p class="state">The open roles need JavaScript. Please turn it on for this site.</p></noscript>
-  <p class="note careers-foot">Interview invitations and offers only come from @tier9studios.com addresses.</p>
+  <p class="note careers-foot" data-site-copy="careers.securityNote">Interview invitations and offers only come from @tier9studios.com addresses.</p>
 </section>
 
 <section class="panel glass glass--strong" aria-labelledby="how-title">
-  <div class="panel__head"><h2 id="how-title">How we hire</h2></div>
+  <div class="panel__head"><h2 id="how-title" data-site-copy="careers.processTitle">How we hire</h2></div>
   <ol class="steps">
-    <li class="step"><h3>Apply</h3><p>Send the form on the role&rsquo;s page. It takes a few minutes.</p></li>
-    <li class="step"><h3>We read it</h3><p>A person on the team reads every application. No automated tool scores or rejects it.</p></li>
-    <li class="step"><h3>We talk</h3><p>If there&rsquo;s a fit, we email you from an @tier9studios.com address to set up interviews.</p></li>
-    <li class="step"><h3>Offer</h3><p>If it&rsquo;s a match on both sides, we make you an offer.</p></li>
+    <li class="step"><h3 data-site-copy="careers.applyTitle">Apply</h3><p data-site-copy="careers.applyDescription">Fill out the short form on the role&rsquo;s page. It only takes a few minutes.</p></li>
+    <li class="step"><h3 data-site-copy="careers.readTitle">We read it</h3><p data-site-copy="careers.readDescription">Someone on the team reads every application. We don&rsquo;t use automated tools to score or reject them.</p></li>
+    <li class="step"><h3 data-site-copy="careers.talkTitle">We talk</h3><p data-site-copy="careers.talkDescription">If it looks like a good fit, we&rsquo;ll email you from an @tier9studios.com address to set up interviews.</p></li>
+    <li class="step"><h3 data-site-copy="careers.offerTitle">Offer</h3><p data-site-copy="careers.offerDescription">If we&rsquo;re both excited to work together, we&rsquo;ll send you an offer.</p></li>
   </ol>
 </section>
 
