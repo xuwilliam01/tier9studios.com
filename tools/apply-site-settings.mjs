@@ -104,7 +104,7 @@ for (const [name, value] of Object.entries(motion)) {
     if (!rx.test(css)) fail('site.css has no --site-blur in :root');
     write(CSS, css.replace(rx, `$1${value}px;`));
   } else if (name === 'mode') {
-    if (!['auto', 'still'].includes(value)) fail('motion.mode must be "auto" or "still"');
+    if (!['play', 'auto', 'still'].includes(value)) fail('motion.mode must be "play", "auto" or "still"');
     scene.mode = value;
   } else if (name === 'biome') {
     if (value !== 'random' && !biomeIds.includes(value)) fail(`motion.biome must be "random" or one of ${biomeIds.join(', ')}`);

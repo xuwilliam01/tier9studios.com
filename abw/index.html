@@ -382,9 +382,9 @@
             var BAG_KEY = "t9.abw.biomeBag", LAST_KEY = "t9.abw.lastBiome";
             var ROTATE_MS = 30000, FADE_MS = 1200;
             var biomes = [], current = null, lastWidth = window.innerWidth;
-            // A visitor who has asked their system for reduced motion gets one still scene: nothing walks, drifts or
-            // loops, and the biome does not change while the page stays open.
-            var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            // The scene moves for every visitor, as on the home page (assets/site/world.js, MOTION mode "play").
+            // Set this to true to hold it still: nothing walks, drifts or loops, and the biome does not change.
+            var still = false;
 
             function rand(a, b) { return a + Math.random() * (b - a); }
             function div(cls, parent) {

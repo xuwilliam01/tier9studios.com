@@ -161,7 +161,8 @@ for name in ["ink", "inkDim", "accent", "enter", "enterHover", "blurple"]:
     add_field("colors", name, "colors", label, "color", default)
 
 add_field("motion", "mode", "motion", "Motion", "choice", motion["mode"],
-          choices=[["auto", "Follow device preference"], ["still", "Always still"]])
+          choices=[["play", "Always move"], ["auto", "Follow device preference"], ["still", "Always still"]],
+          help="Follow device preference holds the scene still for a visitor whose system asks for reduced motion.")
 add_field("motion", "biome", "motion", "Fixed biome", "choice", motion["biome"],
           choices=[["random", "Random"], *[[b["id"], b["id"].replace("-", " ").capitalize()] for b in biomes]],
           help="Choosing a biome keeps that background in place.")

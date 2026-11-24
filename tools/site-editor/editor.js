@@ -926,7 +926,7 @@
       const floor = document.createElement("div");
       floor.className = "floor";
       floor.style.backgroundImage = url(model.floor);
-      const still = motion.mode === "still" || reduce.matches;
+      const still = motion.mode === "still" || (motion.mode === "auto" && reduce.matches);
       const state = still ? model.idle : model.walk;
       scene.replaceChildren(background, floor);
       for (const [index, position] of [12, 46, 76].entries()) {
@@ -962,7 +962,7 @@
     }
     function scheduleRotation() {
       clearTimeout(timer);
-      if (motion.mode === "still" || reduce.matches || !motion.rotateBiomes || motion.biome !== "random") return;
+      if (motion.mode === "still" || (motion.mode === "auto" && reduce.matches) || !motion.rotateBiomes || motion.biome !== "random") return;
       timer = setTimeout(() => {
         makeScene(nextBiome());
         scheduleRotation();
@@ -1026,6 +1026,8 @@
       document.documentElement.style.setProperty("--site-blur", settings.motion.blurPx + "px");
       const next = settings.motion;
       document.documentElement.dataset.siteMotion = next.mode;
+      // As world.js does: keep the scene's transitions when it moves despite a reduced-motion preference.
+      document.documentElement.dataset.sceneMotion = next.mode === "play" ? "play" : "";
       const rebuild = !motion || motion.biome !== next.biome || motion.mode !== next.mode;
       const reschedule = rebuild || motion.rotateBiomes !== next.rotateBiomes || motion.intervalSeconds !== next.intervalSeconds;
       const biome = rebuild && (!motion || motion.biome !== next.biome);
